@@ -38,29 +38,6 @@ const SAMPLE_PRIORITIES = [
   }
 ]
 
-// Valorant-style round timeline visualization
-const ROUND_DATA = [
-  { won: true, side: 'atk', type: 'elim', time: 78 },
-  { won: true, side: 'atk', type: 'spike', time: 95 },
-  { won: false, side: 'atk', type: 'elim', time: 42 },
-  { won: true, side: 'atk', type: 'spike', time: 88 },
-  { won: false, side: 'atk', type: 'time', time: 110 },
-  { won: false, side: 'atk', type: 'elim', time: 31 },
-  { won: true, side: 'def', type: 'elim', time: 67 },
-  { won: true, side: 'def', type: 'spike', time: 112 },
-  { won: false, side: 'def', type: 'elim', time: 55 },
-  { won: true, side: 'def', type: 'elim', time: 89 },
-  { won: false, side: 'def', type: 'spike', time: 103 },
-  { won: true, side: 'def', type: 'elim', time: 44 },
-]
-
-const ERROR_EVENTS = [
-  { round: 2, label: 'Util hoarded — died with full kit', category: 'util' },
-  { round: 5, label: 'Force buy broke team eco', category: 'eco' },
-  { round: 9, label: 'Late rotation — site lost before you arrived', category: 'rotation' },
-  { round: 11, label: 'Same angle 3rd time — opponent predicted', category: 'pattern' },
-]
-
 function VantageLogo({ size = 32 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -71,135 +48,30 @@ function VantageLogo({ size = 32 }) {
   )
 }
 
-function RoundTimeline() {
-  const [activeRound, setActiveRound] = useState(null)
-  const [animRound, setAnimRound] = useState(-1)
-  const activeError = activeRound !== null
-    ? ERROR_EVENTS.find(e => e.round === activeRound + 1)
-    : null
-
-  useEffect(() => {
-    let i = 0
-    const id = setInterval(() => {
-      setAnimRound(i)
-      i++
-      if (i >= ROUND_DATA.length) clearInterval(id)
-    }, 120)
-    return () => clearInterval(id)
-  }, [])
-
-  return (
-    <div className={styles.roundTimeline}>
-      <div className={styles.timelineHeader}>
-        <span className={styles.tlLabel}>Match timeline — Haven</span>
-        <span className={styles.tlScore}>
-          <span className={styles.tlWin}>13</span>
-          <span className={styles.tlSep}> : </span>
-          <span className={styles.tlLoss}>10</span>
-        </span>
-      </div>
-
-      <div className={styles.roundGrid}>
-        {ROUND_DATA.map((r, i) => {
-          const err = ERROR_EVENTS.find(e => e.round === i + 1)
-          return (
-            <motion.button
-              key={i}
-              className={styles.roundCell}
-              data-won={r.won}
-              data-active={activeRound === i}
-              data-error={!!err}
-              data-side={r.side}
-              initial={{ opacity: 0, scaleY: 0 }}
-              animate={i <= animRound ? { opacity: 1, scaleY: 1 } : {}}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              onClick={() => setActiveRound(activeRound === i ? null : i)}
-              title={`Round ${i + 1}`}
-            >
-              <span className={styles.roundNum}>{i + 1}</span>
-              {err && <span className={styles.errorDot} />}
-            </motion.button>
-          )
-        })}
-      </div>
-
-      <AnimatePresence>
-        {activeRound !== null && (
-          <motion.div
-            className={styles.roundDetail}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className={styles.rdHeader}>
-              <span className={styles.rdRound}>Round {activeRound + 1}</span>
-              <span className={styles.rdResult} data-won={ROUND_DATA[activeRound].won}>
-                {ROUND_DATA[activeRound].won ? 'Won' : 'Lost'}
-              </span>
-              <span className={styles.rdSide}>{ROUND_DATA[activeRound].side === 'atk' ? 'Attack' : 'Defense'}</span>
-            </div>
-            {activeError ? (
-              <div className={styles.rdError}>
-                <span className={styles.rdErrorTag} data-cat={activeError.category}>
-                  {activeError.category}
-                </span>
-                <span className={styles.rdErrorMsg}>{activeError.label}</span>
-              </div>
-            ) : (
-              <p className={styles.rdClean}>No decision errors detected this round.</p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className={styles.timelineInsight}>
-        <div className={styles.insightRow}>
-          <span className={styles.insightDot} data-type="error" />
-          <span>4 decision errors detected</span>
-        </div>
-        <div className={styles.insightRow}>
-          <span className={styles.insightDot} data-type="eco" />
-          <span>Economy broken round 5</span>
-        </div>
-        <div className={styles.insightRow}>
-          <span className={styles.insightDot} data-type="util" />
-          <span>Util hoarded round 2</span>
-        </div>
-      </div>
-
-      <div className={styles.agentRow}>
-        {['Jett', 'Sova', 'Omen', 'Killjoy', 'Sage'].map((a, i) => (
-          <div key={a} className={styles.agentChip} data-you={i === 0}>
-            <span className={styles.agentDot} data-you={i === 0} />
-            <span>{a}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function ParticleField() {
   const canvasRef = useRef(null)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    let animId, particles = [], mouse = { x: -999, y: -999 }
+    let animId, particles = [], mouse = { x: -9999, y: -9999 }
+    let width = 0, height = 0
 
     function resize() {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+      const dpr = window.devicePixelRatio || 1
+      width = canvas.offsetWidth
+      height = canvas.offsetHeight
+      canvas.width = width * dpr
+      canvas.height = height * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
     function init() {
       particles = []
-      const count = Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 5500)
+      const count = Math.floor((width * height) / 5500)
       for (let i = 0; i < count; i++) {
         particles.push({
-          x: Math.random() * canvas.offsetWidth,
-          y: Math.random() * canvas.offsetHeight,
+          x: Math.random() * width,
+          y: Math.random() * height,
           vx: (Math.random() - 0.5) * 0.3,
           vy: (Math.random() - 0.5) * 0.3,
           size: Math.random() * 1.4 + 0.5,
@@ -208,13 +80,13 @@ function ParticleField() {
       }
     }
     function draw() {
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight)
+      ctx.clearRect(0, 0, width, height)
       particles.forEach(p => {
         p.x += p.vx; p.y += p.vy
-        if (p.x < 0) p.x = canvas.offsetWidth
-        if (p.x > canvas.offsetWidth) p.x = 0
-        if (p.y < 0) p.y = canvas.offsetHeight
-        if (p.y > canvas.offsetHeight) p.y = 0
+        if (p.x < 0) p.x = width
+        if (p.x > width) p.x = 0
+        if (p.y < 0) p.y = height
+        if (p.y > height) p.y = 0
         const dx = mouse.x - p.x, dy = mouse.y - p.y
         const dist = Math.sqrt(dx*dx + dy*dy)
         const glow = dist < 180 ? (1 - dist/180) * 0.9 : 0
@@ -249,10 +121,27 @@ function ParticleField() {
       const r = canvas.getBoundingClientRect()
       mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top
     }
+    function onLeave() {
+      mouse.x = -9999; mouse.y = -9999
+    }
+
+    let resizeTimer
+    function onResize() {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => { resize(); init() }, 120)
+    }
+
     resize(); init(); draw()
-    window.addEventListener('resize', () => { resize(); init() })
+    window.addEventListener('resize', onResize)
     canvas.addEventListener('mousemove', onMouse)
-    return () => { cancelAnimationFrame(animId); canvas.removeEventListener('mousemove', onMouse) }
+    canvas.addEventListener('mouseleave', onLeave)
+    return () => {
+      cancelAnimationFrame(animId)
+      clearTimeout(resizeTimer)
+      window.removeEventListener('resize', onResize)
+      canvas.removeEventListener('mousemove', onMouse)
+      canvas.removeEventListener('mouseleave', onLeave)
+    }
   }, [])
   return <canvas ref={canvasRef} className={styles.particleCanvas} />
 }
@@ -273,6 +162,8 @@ export default function Landing() {
   const [region, setRegion] = useState('ap')
   const [error, setError] = useState('')
   const [activePriority, setActivePriority] = useState(0)
+  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' })
+  const [contactSent, setContactSent] = useState(false)
   const navigate = useNavigate()
   const { scrollY } = useScroll()
   const heroY = useTransform(scrollY, [0, 500], [0, -60])
@@ -284,6 +175,16 @@ export default function Landing() {
     if (!trimmed.includes('#')) { setError('Use the format Name#TAG'); return }
     setError('')
     navigate(`/report/${encodeURIComponent(trimmed)}?region=${region}`)
+  }
+
+  function handleContactSubmit(e) {
+    e.preventDefault()
+    const { name, email, subject, message } = contactForm
+    const body = `From: ${name} (${email})\n\n${message}`
+    const mailto = `mailto:hello@vantage.gg?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    setContactSent(true)
+    window.location.href = mailto
+    setTimeout(() => setContactSent(false), 4000)
   }
 
   return (
@@ -302,7 +203,7 @@ export default function Landing() {
 
       <section className={styles.hero}>
         <ParticleField />
-        <motion.div className={styles.heroLeft} style={{ y: heroY, opacity: heroOpacity }}>
+        <motion.div className={styles.heroCenter} style={{ y: heroY, opacity: heroOpacity }}>
           <motion.p className={styles.eyebrow}
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}>
@@ -341,12 +242,6 @@ export default function Landing() {
             {error && <p className={styles.inputError}>{error}</p>}
             <p className={styles.inputNote}>Free · Public profile required · No installs</p>
           </motion.form>
-        </motion.div>
-
-        <motion.div className={styles.heroRight}
-          initial={{ opacity: 0, x: 32 }} animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-          <RoundTimeline />
         </motion.div>
       </section>
 
@@ -412,6 +307,7 @@ export default function Landing() {
                         initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }}
                         transition={{ duration: 0.4, delay: i * 0.1 }}
                         viewport={{ once: true }} />
+                      <span className={styles.pipePulse} style={{ animationDelay: `${i * 0.35}s` }} />
                       <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
                         <path d="M0 0l6 4-6 4z" fill="#3d3d3d"/>
                       </svg>
@@ -514,32 +410,71 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className={styles.finalCta}>
-        <div className={styles.finalCtaLeft}>
+      <section className={styles.contactSection} id="contact">
+        <div className={styles.contactLeft}>
           <FadeUp>
-            <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Run your analysis</p>
+            <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Get in touch</p>
             <h2 className={styles.finalHeadline}>
-              Start your next session<br /><span>knowing what to fix.</span>
+              Questions, feedback,<br /><span>or partnership ideas.</span>
             </h2>
+            <p className={styles.contactDesc}>
+              VANTAGE is early. If something's broken, confusing, or you want to talk about coaching data, reach out directly.
+            </p>
           </FadeUp>
           <FadeUp delay={0.1}>
-            <form className={styles.inputGroup} onSubmit={handleAnalyze} style={{ maxWidth: 480 }}>
-              <div className={styles.inputFields}>
-                <input className={styles.riotInput} type="text" placeholder="YourName#TAG"
-                  value={riotId} onChange={e => { setRiotId(e.target.value); setError('') }}
-                  autoComplete="off" spellCheck={false} />
-                <select className={styles.regionSelect} value={region} onChange={e => setRegion(e.target.value)}>
-                  {REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
+            <form className={styles.contactForm} onSubmit={handleContactSubmit}>
+              <div className={styles.contactRow}>
+                <div className={styles.contactField}>
+                  <label className={styles.contactLabel}>Name</label>
+                  <input
+                    className={styles.contactInput}
+                    type="text"
+                    placeholder="Your name"
+                    value={contactForm.name}
+                    onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className={styles.contactField}>
+                  <label className={styles.contactLabel}>Email</label>
+                  <input
+                    className={styles.contactInput}
+                    type="email"
+                    placeholder="you@example.com"
+                    value={contactForm.email}
+                    onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className={styles.contactField}>
+                <label className={styles.contactLabel}>Subject</label>
+                <input
+                  className={styles.contactInput}
+                  type="text"
+                  placeholder="What's this about?"
+                  value={contactForm.subject}
+                  onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className={styles.contactField}>
+                <label className={styles.contactLabel}>Message</label>
+                <textarea
+                  className={styles.contactTextarea}
+                  placeholder="Tell me what's up"
+                  rows={4}
+                  value={contactForm.message}
+                  onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))}
+                  required
+                />
               </div>
               <button className={styles.cta} type="submit">
-                Analyze my matches
+                {contactSent ? 'Opening your email client...' : 'Send message'}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M2.5 7h9M7.5 3.5L11 7l-7.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
-              {error && <p className={styles.inputError}>{error}</p>}
-              <p className={styles.inputNote}>Free · Public profile required · No installs</p>
             </form>
           </FadeUp>
         </div>
@@ -550,7 +485,7 @@ export default function Landing() {
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <TacticalRadar size={360} dense />
+          <TacticalRadar size={340} dense />
         </motion.div>
       </section>
 
