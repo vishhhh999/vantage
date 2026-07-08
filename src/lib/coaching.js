@@ -1,16 +1,9 @@
-const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
-
 export async function generateCoachingReport(overview, priorities, riotId) {
   const prompt = buildPrompt(overview, priorities, riotId)
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/anthropic', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
@@ -21,13 +14,8 @@ Rules:
 - Never give generic advice like "communicate more" or "practice aim".
 - Every insight must reference a specific number or pattern from the match data provided.
 - Speak directly to the player. No fluff, no hedging.
-- Output must be valid JSON only. No preamble, no markdown.`,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
+- Output must be valid JSON only. No preamble, no markdown fences.`,
+      messages: [{ role: 'user', content: prompt }]
     })
   })
 
@@ -37,10 +25,11 @@ Rules:
   }
 
   const data = await res.json()
-  const text = data.content[0]?.text || ''
+  const text = data.content?.[0]?.text || ''
 
   try {
-    return JSON.parse(text)
+    const clean = text.replace(/```json|```/g, '').trim()
+    return JSON.parse(clean)
   } catch {
     return { summary: text, priorities: [] }
   }
