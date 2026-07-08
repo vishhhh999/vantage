@@ -181,9 +181,9 @@ export default function Landing() {
     e.preventDefault()
     const { name, email, subject, message } = contactForm
     const body = `From: ${name} (${email})\n\n${message}`
-    const mailto = `mailto:hello@vantage.gg?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=visheshmahendru11@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     setContactSent(true)
-    window.location.href = mailto
+    window.open(gmailUrl, '_blank', 'noopener,noreferrer')
     setTimeout(() => setContactSent(false), 4000)
   }
 
@@ -470,7 +470,7 @@ export default function Landing() {
                 />
               </div>
               <button className={styles.cta} type="submit">
-                {contactSent ? 'Opening your email client...' : 'Send message'}
+                {contactSent ? 'Opening Gmail...' : 'Send message'}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M2.5 7h9M7.5 3.5L11 7l-7.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>

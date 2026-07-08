@@ -34,7 +34,12 @@ export default function Login() {
       if (sbError) throw sbError
       setSent(true)
     } catch (err) {
-      setError(err.message || 'Failed to send login link')
+      const msg = err.message || 'Failed to send login link'
+      if (/invalid path/i.test(msg)) {
+        setError('Supabase project URL looks misconfigured. Double-check VITE_SUPABASE_URL in Vercel — it should be exactly https://your-project-ref.supabase.co with nothing extra.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }
