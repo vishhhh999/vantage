@@ -181,7 +181,7 @@ export default function Landing() {
     e.preventDefault()
     const { name, email, subject, message } = contactForm
     const body = `From: ${name} (${email})\n\n${message}`
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=v1shesh01111@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=visheshmahendru11@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     setContactSent(true)
     window.open(gmailUrl, '_blank', 'noopener,noreferrer')
     setTimeout(() => setContactSent(false), 4000)
@@ -494,7 +494,10 @@ export default function Landing() {
           <VantageLogo size={16} />
           <span className={styles.wordmark}>VANTAGE</span>
         </div>
-        <span className={styles.footerNote}>Not affiliated with Riot Games, Inc.</span>
+        <div className={styles.footerRight}>
+          <span className={styles.betaBadge}>v2-beta</span>
+          <span className={styles.footerNote}>Not affiliated with Riot Games, Inc.</span>
+        </div>
       </footer>
     </div>
   )

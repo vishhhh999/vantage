@@ -424,3 +424,11 @@
   .agentRow { grid-template-columns: 100px 1fr 44px 28px; }
   .footer { flex-direction: column; gap: 16px; }
 }
+
+.footerRight { display: flex; align-items: center; gap: 10px; }
+.betaBadge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid var(--accent-border); border-radius: var(--radius-full, 9999px);
+  padding: 2px 8px; text-transform: uppercase;
+}

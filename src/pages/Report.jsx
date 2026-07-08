@@ -175,7 +175,10 @@ export default function Report() {
 
         <div className={styles.footer}>
           <Link to="/" className={styles.newAnalysis}>Run another analysis</Link>
-          <p className={styles.footerNote}>Not affiliated with Riot Games</p>
+          <div className={styles.footerRight}>
+            <span className={styles.betaBadge}>v2-beta</span>
+            <p className={styles.footerNote}>Not affiliated with Riot Games</p>
+          </div>
         </div>
       </div>
     </div>

@@ -182,7 +182,7 @@ export default function Dashboard() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   // ── Loading ──
@@ -363,7 +363,10 @@ export default function Dashboard() {
 
         <div className={styles.footer}>
           <Link to="/" className={styles.newAnalysis}>← Back to home</Link>
-          <p className={styles.footerNote}>Not affiliated with Riot Games</p>
+          <div className={styles.footerRight}>
+            <span className={styles.betaBadge}>v2-beta</span>
+            <p className={styles.footerNote}>Not affiliated with Riot Games</p>
+          </div>
         </div>
       </div>
     </div>

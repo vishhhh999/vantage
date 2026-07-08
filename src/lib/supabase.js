@@ -24,4 +24,19 @@ if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = globalThis.__vantageSupabase || createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'vantage-auth',
+  },
+})
+
+// Vite HMR in dev can re-run this module and create a second GoTrue client,
+// which causes intermittent/flickery session state (e.g. sign-out not sticking,
+// or the app appearing to "refresh" back into a signed-in state). Pin one
+// instance on the global object so hot reloads reuse it instead of duplicating it.
+if (import.meta.env.DEV) {
+  globalThis.__vantageSupabase = supabase
+}
