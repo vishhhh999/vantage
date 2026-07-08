@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { fetchPlayerData } from '../lib/riot'
-import { scoreMatches, getPriorityFindings } from '../lib/scoring'
-import { generateCoachingReport } from '../lib/coaching'
+import { runFullAnalysis } from '../lib/analysis'
 import styles from './Report.module.css'
 
 const STAGES = [
@@ -18,9 +16,7 @@ export default function Report() {
   const region = searchParams.get('region') || 'ap'
 
   const [stage, setStage] = useState(0)
-  const [report, setReport] = useState(null)
-  const [overview, setOverview] = useState(null)
-  const [priorities, setPriorities] = useState([])
+  const [result, setResult] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -28,23 +24,9 @@ export default function Report() {
 
     async function run() {
       try {
-        setStage(0)
-        const { account, matches } = await fetchPlayerData(riotId, region)
+        const analysis = await runFullAnalysis(riotId, region, s => { if (!cancelled) setStage(s) })
         if (cancelled) return
-
-        setStage(1)
-        const scored = scoreMatches(matches, account.puuid)
-        if (!scored) throw new Error('Not enough match data. Make sure your profile is public.')
-        const found = getPriorityFindings(scored)
-        setOverview(scored.overview)
-        setPriorities(found)
-        if (cancelled) return
-
-        setStage(2)
-        const coaching = await generateCoachingReport(scored.overview, found, riotId)
-        if (cancelled) return
-
-        setReport(coaching)
+        setResult(analysis)
       } catch (err) {
         if (!cancelled) setError(err.message || 'Something went wrong. Check your Riot ID and try again.')
       }
@@ -67,7 +49,7 @@ export default function Report() {
     )
   }
 
-  if (!report) {
+  if (!result) {
     return (
       <div className={styles.loadingPage}>
         <span className={styles.wordmark}>VAN<span>T</span>AGE</span>
@@ -91,13 +73,7 @@ export default function Report() {
     )
   }
 
-  const displayPriorities = report.priorities?.length > 0 ? report.priorities : priorities.map((p, i) => ({
-    rank: i + 1,
-    label: p.label,
-    finding: p.description,
-    fix: p.fix,
-    severity: i === 0 ? 'critical' : i === 1 ? 'high' : 'medium'
-  }))
+  const { overview, priorities: displayPriorities, summary } = result
 
   return (
     <div className={styles.page}>
@@ -136,10 +112,10 @@ export default function Report() {
           )}
         </header>
 
-        {report.summary && (
+        {summary && (
           <div className={styles.summary}>
             <p className={styles.summaryLabel}>Coach summary</p>
-            <p className={styles.summaryText}>{report.summary}</p>
+            <p className={styles.summaryText}>{summary}</p>
           </div>
         )}
 

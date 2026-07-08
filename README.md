@@ -71,25 +71,22 @@ VITE_ANTHROPIC_API_KEY=    # From console.anthropic.com
 ## Supabase setup
 
 1. Create a new project at [supabase.com](https://supabase.com)
-2. Copy the project URL and anon key into `.env`
-3. For v1 (no auth), Supabase is optional — the app works without it
-4. For v2 (user accounts + history), run this SQL in the Supabase editor:
+2. Copy the project URL and anon key into `.env` — must look exactly like `https://your-project-ref.supabase.co`, nothing appended
+3. Go to **Authentication → URL Configuration** and set:
+   - **Site URL**: your deployed Vercel URL (e.g. `https://vantage-ochre-alpha.vercel.app`)
+   - **Redirect URLs**: add `https://vantage-ochre-alpha.vercel.app/**`
+   (without this, magic link emails redirect to `localhost:3000` and dead-end)
+4. Run `supabase/schema.sql` in the Supabase SQL Editor. This creates:
+   - `profiles` — one row per user, storing their linked Riot ID + region
+   - `reports` — every analysis ever run for that user, with Row Level Security so users only ever see their own data
 
-```sql
-create table reports (
-  id uuid default gen_random_uuid() primary key,
-  riot_id text not null,
-  puuid text,
-  region text,
-  overview jsonb,
-  priorities jsonb,
-  coaching_report jsonb,
-  created_at timestamp with time zone default now()
-);
+## Dashboard behavior
 
-create index on reports (riot_id);
-create index on reports (puuid);
-```
+- First sign-in: user links one Riot ID + region to their account.
+- Every dashboard load: if the last saved report is more than 5 minutes old (or none exists), a fresh analysis runs automatically and is saved.
+- Manual **Re-run analysis** button is disabled with a live countdown until that same 5-minute cooldown expires — same rule for auto and manual, so a user can't spam the Riot/Claude APIs.
+- **Progress** section compares the very first saved report to the latest one (win rate, K/D, ADR, HS%) so improvement is visible over time.
+- **Report history** shows the last 6 analyses with date, win rate, K/D, and top issue at a glance.
 
 ---
 
