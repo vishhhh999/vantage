@@ -7,6 +7,14 @@ const BLIP_LABELS = [
   'site retake', 'crosshair drift'
 ]
 
+// Sweep/rings use cyan (the Defender-side HUD tint) rather than the brand
+// red — red is reserved for the "flagged error" blips specifically, so it
+// keeps its scarcity/meaning instead of covering the whole radar as ambient
+// decoration.
+const CYAN = '92,225,230'
+const RED = '255,70,85'
+const INK = '236,232,225'
+
 export default function TacticalRadar({ size = 480, dense = false }) {
   const canvasRef = useRef(null)
   const sweepRef = useRef(0)
@@ -28,6 +36,7 @@ export default function TacticalRadar({ size = 480, dense = false }) {
     function spawnBlip() {
       const angle = Math.random() * Math.PI * 2
       const r = maxR * (0.25 + Math.random() * 0.7)
+      const flagged = Math.random() < 0.35
       blipsRef.current.push({
         x: cx + Math.cos(angle) * r,
         y: cy + Math.sin(angle) * r,
@@ -35,6 +44,7 @@ export default function TacticalRadar({ size = 480, dense = false }) {
         maxLife: 140 + Math.random() * 60,
         label: BLIP_LABELS[Math.floor(Math.random() * BLIP_LABELS.length)],
         showLabel: Math.random() > 0.55,
+        color: flagged ? RED : CYAN,
       })
     }
 
@@ -49,7 +59,7 @@ export default function TacticalRadar({ size = 480, dense = false }) {
       for (let i = 1; i <= rings; i++) {
         ctx.beginPath()
         ctx.arc(cx, cy, (maxR / rings) * i, 0, Math.PI * 2)
-        ctx.strokeStyle = 'rgba(184,245,160,0.08)'
+        ctx.strokeStyle = `rgba(${CYAN},0.09)`
         ctx.lineWidth = 1
         ctx.stroke()
       }
@@ -59,7 +69,7 @@ export default function TacticalRadar({ size = 480, dense = false }) {
       ctx.lineTo(cx + maxR, cy)
       ctx.moveTo(cx, cy - maxR)
       ctx.lineTo(cx, cy + maxR)
-      ctx.strokeStyle = 'rgba(184,245,160,0.05)'
+      ctx.strokeStyle = `rgba(${CYAN},0.06)`
       ctx.lineWidth = 1
       ctx.stroke()
 
@@ -71,10 +81,10 @@ export default function TacticalRadar({ size = 480, dense = false }) {
         : null
 
       if (grad) {
-        grad.addColorStop(0, 'rgba(184,245,160,0)')
-        grad.addColorStop(0.08, 'rgba(184,245,160,0.22)')
-        grad.addColorStop(0.16, 'rgba(184,245,160,0)')
-        grad.addColorStop(1, 'rgba(184,245,160,0)')
+        grad.addColorStop(0, `rgba(${CYAN},0)`)
+        grad.addColorStop(0.08, `rgba(${CYAN},0.2)`)
+        grad.addColorStop(0.16, `rgba(${CYAN},0)`)
+        grad.addColorStop(1, `rgba(${CYAN},0)`)
         ctx.save()
         ctx.beginPath()
         ctx.arc(cx, cy, maxR, 0, Math.PI * 2)
@@ -87,7 +97,7 @@ export default function TacticalRadar({ size = 480, dense = false }) {
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR)
-      ctx.strokeStyle = 'rgba(184,245,160,0.6)'
+      ctx.strokeStyle = `rgba(${CYAN},0.55)`
       ctx.lineWidth = 1
       ctx.stroke()
 
@@ -106,25 +116,25 @@ export default function TacticalRadar({ size = 480, dense = false }) {
 
         ctx.beginPath()
         ctx.arc(b.x, b.y, 3 * pulse, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(184,245,160,${opacity})`
+        ctx.fillStyle = `rgba(${b.color},${opacity})`
         ctx.fill()
 
         ctx.beginPath()
         ctx.arc(b.x, b.y, 8 * pulse, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(184,245,160,${opacity * 0.35})`
+        ctx.strokeStyle = `rgba(${b.color},${opacity * 0.35})`
         ctx.lineWidth = 1
         ctx.stroke()
 
         if (b.showLabel && opacity > 0.4) {
-          ctx.font = '10px DM Sans, sans-serif'
-          ctx.fillStyle = `rgba(240,236,228,${opacity * 0.75})`
+          ctx.font = '10px Barlow, sans-serif'
+          ctx.fillStyle = `rgba(${INK},${opacity * 0.75})`
           ctx.fillText(b.label, b.x + 12, b.y + 3)
         }
       })
 
       ctx.beginPath()
       ctx.arc(cx, cy, 3, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(240,236,228,0.9)'
+      ctx.fillStyle = `rgba(${INK},0.9)`
       ctx.fill()
 
       requestAnimationFrame(draw)

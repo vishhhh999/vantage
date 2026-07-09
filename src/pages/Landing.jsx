@@ -13,7 +13,7 @@ const REGIONS = [
 
 const SAMPLE_PRIORITIES = [
   {
-    rank: 1, severity: 'critical',
+    rank: 1, severity: 'critical', impact: 82,
     label: 'Agent-role mismatch',
     stat: '45.3% WR on main',
     finding: 'You\'ve played Raze in 53 of your last 139 matches with a 45.3% winrate. Your Jett winrate is 65.2% over 23 matches — a 20-point gap. You\'re defaulting to the wrong agent every session based on habit, not data.',
@@ -21,7 +21,7 @@ const SAMPLE_PRIORITIES = [
     rounds: 'Costs est. 4–6 rounds per session'
   },
   {
-    rank: 2, severity: 'high',
+    rank: 2, severity: 'high', impact: 61,
     label: 'Map-specific breakdown',
     stat: '31.6% WR on Corrode',
     finding: 'Corrode: 31.6% (6W–12L). Bind: 42.9% (9W–12L). Haven: 75% (15W–5L). Your read on 3-site maps is strong. Your rotation logic breaks on maps with tight corridors — you\'re playing the same tempo regardless of map geometry.',
@@ -29,7 +29,7 @@ const SAMPLE_PRIORITIES = [
     rounds: 'Costs est. 3–5 rounds per session'
   },
   {
-    rank: 3, severity: 'high',
+    rank: 3, severity: 'high', impact: 74,
     label: 'Session degradation',
     stat: 'K/D drops 0.4 after match 6',
     finding: 'You played 10 matches on March 11. Your DDΔ that day was nearly neutral despite 5 wins. Your best single match was 2.1 K/D. Your worst was 0.5 K/D. Same player, same week. Your floor is costing you more than your ceiling gains.',
@@ -41,9 +41,9 @@ const SAMPLE_PRIORITIES = [
 function VantageLogo({ size = 32 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="16,2 30,28 2,28" fill="none" stroke="#b8f5a0" strokeWidth="1.5" strokeLinejoin="round"/>
-      <polygon points="16,10 24,26 8,26" fill="#b8f5a0" fillOpacity="0.1" stroke="#b8f5a0" strokeWidth="1" strokeLinejoin="round"/>
-      <line x1="16" y1="2" x2="16" y2="28" stroke="#b8f5a0" strokeWidth="1" strokeOpacity="0.25"/>
+      <polygon points="16,2 30,28 2,28" fill="none" stroke="#FF4655" strokeWidth="1.5" strokeLinejoin="round"/>
+      <polygon points="16,10 24,26 8,26" fill="#FF4655" fillOpacity="0.1" stroke="#FF4655" strokeWidth="1" strokeLinejoin="round"/>
+      <line x1="16" y1="2" x2="16" y2="28" stroke="#FF4655" strokeWidth="1" strokeOpacity="0.25"/>
     </svg>
   )
 }
@@ -93,7 +93,8 @@ function ParticleField() {
         const pulseSize = dist < 180 ? p.size + (1 - dist/180) * 1.8 : p.size
         ctx.beginPath()
         ctx.arc(p.x, p.y, pulseSize, 0, Math.PI*2)
-        ctx.fillStyle = `rgba(184,245,160,${Math.min(1, p.opacity + glow)})`
+        const particleColor = glow > 0.05 ? '255,70,85' : '236,232,225'
+        ctx.fillStyle = `rgba(${particleColor},${Math.min(1, p.opacity + glow)})`
         ctx.fill()
       })
       particles.forEach((a, i) => {
@@ -103,7 +104,7 @@ function ParticleField() {
           const d = Math.sqrt(dx*dx + dy*dy)
           if (d < 110) {
             ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y)
-            ctx.strokeStyle = `rgba(184,245,160,${0.1*(1-d/110)})`
+            ctx.strokeStyle = `rgba(78,90,102,${0.12*(1-d/110)})`
             ctx.lineWidth = 0.6; ctx.stroke()
           }
         }
@@ -111,7 +112,7 @@ function ParticleField() {
       if (mouse.x > -900) {
         ctx.beginPath()
         ctx.arc(mouse.x, mouse.y, 180, 0, Math.PI * 2)
-        ctx.strokeStyle = 'rgba(184,245,160,0.06)'
+        ctx.strokeStyle = 'rgba(78,90,102,0.08)'
         ctx.lineWidth = 1
         ctx.stroke()
       }
@@ -273,17 +274,17 @@ export default function Landing() {
               {
                 num: '01', title: 'Enter your Riot ID',
                 desc: 'No installs. No screen capture. Just your Riot ID and region. We pull your last 20 competitive matches directly from the official Riot API.',
-                icon: <svg viewBox="0 0 56 56" fill="none"><rect x="10" y="14" width="36" height="28" rx="3" stroke="#b8f5a0" strokeWidth="1.5"/><path d="M19 24h18M19 30h11" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round"/><circle cx="41" cy="14" r="7" fill="#0e0e0e" stroke="#b8f5a0" strokeWidth="1.5"/><path d="M39 14l1.5 1.5L43 12" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                icon: <svg viewBox="0 0 56 56" fill="none"><rect x="10" y="14" width="36" height="28" rx="3" stroke="#FF4655" strokeWidth="1.5"/><path d="M19 24h18M19 30h11" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round"/><circle cx="41" cy="14" r="7" fill="#0F1923" stroke="#FF4655" strokeWidth="1.5"/><path d="M39 14l1.5 1.5L43 12" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               },
               {
                 num: '02', title: 'We score your decisions',
                 desc: 'Every match is parsed across 12 error categories — economy, rotation, role discipline, util timing, map patterns, clutch reads. Not what happened. Why.',
-                icon: <svg viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="16" stroke="#2a2a2a" strokeWidth="1.5"/><path d="M28 12v4M28 40v4M12 28h4M40 28h4" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round"/><circle cx="28" cy="28" r="5" fill="rgba(184,245,160,0.1)" stroke="#b8f5a0" strokeWidth="1.5"/><line x1="28" y1="28" x2="35" y2="21" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round"/><circle cx="35" cy="21" r="2" fill="#b8f5a0"/></svg>
+                icon: <svg viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="16" stroke="#3E4753" strokeWidth="1.5"/><path d="M28 12v4M28 40v4M12 28h4M40 28h4" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round"/><circle cx="28" cy="28" r="5" fill="rgba(255,70,85,0.1)" stroke="#FF4655" strokeWidth="1.5"/><line x1="28" y1="28" x2="35" y2="21" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round"/><circle cx="35" cy="21" r="2" fill="#FF4655"/></svg>
               },
               {
                 num: '03', title: 'Get 3 things to fix',
                 desc: 'Your highest-impact errors surface as your priorities. Each one shows the specific pattern, why it costs rounds, and one concrete adjustment for next session.',
-                icon: <svg viewBox="0 0 56 56" fill="none"><path d="M16 20h24M16 28h16" stroke="#3d3d3d" strokeWidth="1.5" strokeLinecap="round"/><path d="M16 20h24M16 28h12" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round"/><circle cx="40" cy="38" r="8" fill="rgba(184,245,160,0.06)" stroke="#b8f5a0" strokeWidth="1.5"/><path d="M37 38l2 2 4-4" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                icon: <svg viewBox="0 0 56 56" fill="none"><path d="M16 20h24M16 28h16" stroke="#3E4753" strokeWidth="1.5" strokeLinecap="round"/><path d="M16 20h24M16 28h12" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round"/><circle cx="40" cy="38" r="8" fill="rgba(255,70,85,0.06)" stroke="#FF4655" strokeWidth="1.5"/><path d="M37 38l2 2 4-4" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               },
             ].map((s, i) => (
               <FadeUp key={s.num} delay={i * 0.1}>
@@ -310,7 +311,7 @@ export default function Landing() {
                         viewport={{ once: true }} />
                       <span className={styles.pipePulse} style={{ animationDelay: `${i * 0.35}s` }} />
                       <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
-                        <path d="M0 0l6 4-6 4z" fill="#3d3d3d"/>
+                        <path d="M0 0l6 4-6 4z" fill="#3E4753"/>
                       </svg>
                     </div>
                   )}
@@ -330,7 +331,7 @@ export default function Landing() {
           </FadeUp>
 
           <FadeUp delay={0.15}>
-            <div className={styles.sampleCard}>
+            <div className={`${styles.sampleCard} v-cut-lg`}>
               <div className={styles.scHeader}>
                 <div className={styles.scLeft}>
                   <VantageLogo size={16} />
@@ -354,10 +355,32 @@ export default function Landing() {
                 <p>Your ceiling is clearly Immortal — the data proves it. Your floor is what's keeping you in Platinum. Three patterns are responsible for the gap. Fix these in order.</p>
               </div>
 
+              <div className={styles.scImpactChart}>
+                <span className={styles.scImpactChartLabel}>Impact by priority</span>
+                <div className={styles.scImpactBars}>
+                  {SAMPLE_PRIORITIES.map((p, i) => (
+                    <button key={p.rank} className={styles.scImpactBarRow} onClick={() => setActivePriority(i)} data-active={activePriority === i}>
+                      <span className={styles.scImpactBarLabel}>P{p.rank}</span>
+                      <div className={styles.scImpactBarTrack}>
+                        <motion.div
+                          className={styles.scImpactBarFill}
+                          data-severity={p.severity}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${p.impact}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.7, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                        />
+                      </div>
+                      <span className={styles.scImpactBarNum}>{p.impact}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className={styles.scBody}>
                 <div className={styles.scTabs}>
                   {SAMPLE_PRIORITIES.map((p, i) => (
-                    <button key={p.rank} className={styles.scTab}
+                    <button key={p.rank} className={`${styles.scTab} v-cut-sm`}
                       data-active={activePriority === i}
                       data-severity={p.severity}
                       onClick={() => setActivePriority(i)}>
@@ -382,14 +405,14 @@ export default function Landing() {
                     </div>
                     <h3 className={styles.scDetailTitle}>{SAMPLE_PRIORITIES[activePriority].label}</h3>
                     <p className={styles.scDetailFinding}>{SAMPLE_PRIORITIES[activePriority].finding}</p>
-                    <div className={styles.scFix}>
+                    <div className={`${styles.scFix} v-cut-sm`}>
                       <span className={styles.scFixTag}>Fix</span>
                       <p>{SAMPLE_PRIORITIES[activePriority].fix}</p>
                     </div>
                     <div className={styles.scImpact}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <circle cx="6" cy="6" r="5" stroke="#f2994a" strokeWidth="1"/>
-                        <path d="M6 3.5v3M6 8v.5" stroke="#f2994a" strokeWidth="1.2" strokeLinecap="round"/>
+                        <circle cx="6" cy="6" r="5" stroke="#F5A623" strokeWidth="1"/>
+                        <path d="M6 3.5v3M6 8v.5" stroke="#F5A623" strokeWidth="1.2" strokeLinecap="round"/>
                       </svg>
                       {SAMPLE_PRIORITIES[activePriority].rounds}
                     </div>
@@ -399,7 +422,7 @@ export default function Landing() {
 
               <div className={styles.scCta}>
                 <p>This is real analysis. See it on your own matches.</p>
-                <button className={styles.scCtaBtn} onClick={handleAnalyze}>Sign in to analyze</button>
+                <button className={`${styles.scCtaBtn} v-cut-sm`} onClick={handleAnalyze}>Sign in to analyze</button>
               </div>
             </div>
           </FadeUp>

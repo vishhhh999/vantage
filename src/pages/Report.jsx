@@ -113,7 +113,7 @@ export default function Report() {
         </header>
 
         {summary && (
-          <div className={styles.summary}>
+          <div className={`${styles.summary} v-cut-md`}>
             <p className={styles.summaryLabel}>Coach summary</p>
             <p className={styles.summaryText}>{summary}</p>
           </div>
@@ -122,7 +122,7 @@ export default function Report() {
         <div className={styles.priorities}>
           <p className={styles.prioritiesLabel}>Priority findings</p>
           {displayPriorities.map(p => (
-            <div className={styles.priorityBlock} key={p.rank} data-severity={p.severity}>
+            <div className={`${styles.priorityBlock} v-cut-md`} key={p.rank} data-severity={p.severity}>
               <div className={styles.priorityHeader}>
                 <div className={styles.priorityMeta}>
                   <span className={styles.priorityRank} data-severity={p.severity}>
@@ -136,7 +136,7 @@ export default function Report() {
                 <h2 className={styles.priorityTitle}>{p.label}</h2>
               </div>
               <p className={styles.priorityFinding}>{p.finding}</p>
-              <div className={styles.priorityFix}>
+              <div className={`${styles.priorityFix} v-cut-sm`}>
                 <span className={styles.fixLabel}>Fix</span>
                 <p>{p.fix}</p>
               </div>
@@ -145,7 +145,7 @@ export default function Report() {
         </div>
 
         {overview && (
-          <div className={styles.breakdown}>
+          <div className={`${styles.breakdown} v-cut-md`}>
             <p className={styles.breakdownLabel}>Agent breakdown</p>
             <div className={styles.agentGrid}>
               {Object.entries(overview.agents)

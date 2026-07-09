@@ -7,9 +7,9 @@ import styles from './Login.module.css'
 function VantageLogo({ size = 32 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <polygon points="16,2 30,28 2,28" fill="none" stroke="#b8f5a0" strokeWidth="1.5" strokeLinejoin="round"/>
-      <polygon points="16,10 24,26 8,26" fill="#b8f5a0" fillOpacity="0.12" stroke="#b8f5a0" strokeWidth="1" strokeLinejoin="round"/>
-      <line x1="16" y1="2" x2="16" y2="28" stroke="#b8f5a0" strokeWidth="1" strokeOpacity="0.3"/>
+      <polygon points="16,2 30,28 2,28" fill="none" stroke="#FF4655" strokeWidth="1.5" strokeLinejoin="round"/>
+      <polygon points="16,10 24,26 8,26" fill="#FF4655" fillOpacity="0.12" stroke="#FF4655" strokeWidth="1" strokeLinejoin="round"/>
+      <line x1="16" y1="2" x2="16" y2="28" stroke="#FF4655" strokeWidth="1" strokeOpacity="0.3"/>
     </svg>
   )
 }
@@ -60,7 +60,7 @@ export default function Login() {
       </Link>
 
       <motion.div
-        className={styles.card}
+        className={`${styles.card} v-cut-lg`}
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -91,7 +91,7 @@ export default function Login() {
               </div>
               {error && <p className={styles.error}>{error}</p>}
               <button
-                className={styles.submitBtn}
+                className={`${styles.submitBtn} v-cut-sm`}
                 type="submit"
                 disabled={loading || !email.trim()}
               >
@@ -112,14 +112,14 @@ export default function Login() {
           >
             <div className={styles.sentIcon}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M20 6L9 17l-5-5" stroke="#b8f5a0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 6L9 17l-5-5" stroke="#FF4655" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <h2 className={styles.sentTitle}>Check your email</h2>
             <p className={styles.sentDesc}>
               We sent a magic link to <strong>{email}</strong>. Click it to sign in — no password needed.
             </p>
-            <button className={styles.resendBtn} onClick={() => setSent(false)}>
+            <button className={`${styles.resendBtn} v-cut-sm`} onClick={() => setSent(false)}>
               Use a different email
             </button>
           </motion.div>

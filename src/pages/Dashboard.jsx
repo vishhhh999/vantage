@@ -18,12 +18,23 @@ const REGIONS = [
 
 const STAGES = ['Pulling your match history...', 'Scoring decision patterns...', 'Generating coaching report...']
 
+function describeAnalysisError(err) {
+  const msg = err?.message || ''
+  if (/forbidden/i.test(msg) || /\b403\b/.test(msg)) {
+    return "Riot requires you to sign in directly through Riot (RSO) before match history can be read — this isn't a bug on our end. Your account is linked, but analysis can't run until Riot finishes enabling that for VANTAGE. Try again once RSO sign-in is live."
+  }
+  if (/no competitive matches/i.test(msg)) {
+    return msg
+  }
+  return msg || 'Analysis failed. Try again shortly.'
+}
+
 function VantageLogo({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <polygon points="16,2 30,28 2,28" fill="none" stroke="#b8f5a0" strokeWidth="1.5" strokeLinejoin="round"/>
-      <polygon points="16,10 24,26 8,26" fill="#b8f5a0" fillOpacity="0.1" stroke="#b8f5a0" strokeWidth="1" strokeLinejoin="round"/>
-      <line x1="16" y1="2" x2="16" y2="28" stroke="#b8f5a0" strokeWidth="1" strokeOpacity="0.25"/>
+      <polygon points="16,2 30,28 2,28" fill="none" stroke="#FF4655" strokeWidth="1.5" strokeLinejoin="round"/>
+      <polygon points="16,10 24,26 8,26" fill="#FF4655" fillOpacity="0.1" stroke="#FF4655" strokeWidth="1" strokeLinejoin="round"/>
+      <line x1="16" y1="2" x2="16" y2="28" stroke="#FF4655" strokeWidth="1" strokeOpacity="0.25"/>
     </svg>
   )
 }
@@ -73,6 +84,7 @@ export default function Dashboard() {
   const [linking, setLinking] = useState(false)
 
   const [analyzing, setAnalyzing] = useState(false)
+  const [analysisError, setAnalysisError] = useState('')
   const [analyzeStage, setAnalyzeStage] = useState(0)
   const [cooldownMs, setCooldownMs] = useState(0)
   const tickRef = useRef(null)
@@ -87,11 +99,18 @@ export default function Dashboard() {
 
     let latest = await getLatestReport(currentUser.id)
     const remaining = msUntilNextAnalysis(latest)
+    let refreshError = null
 
     if (autoRefresh && remaining === 0) {
-      // Enough time has passed since the last analysis (or none exists) — refresh automatically.
-      const fresh = await runAnalysisAndSave(currentUser.id, prof.riot_id, prof.region)
-      latest = fresh
+      // Enough time has passed since the last analysis (or none exists) — refresh
+      // automatically. If this fails (e.g. Riot 403s because RSO isn't live yet),
+      // it must NOT take down the whole dashboard — the profile is real and the
+      // page should still render, just with a clear inline explanation.
+      try {
+        latest = await runAnalysisAndSave(currentUser.id, prof.riot_id, prof.region)
+      } catch (err) {
+        refreshError = describeAnalysisError(err)
+      }
     }
 
     const [first, hist] = await Promise.all([
@@ -103,6 +122,7 @@ export default function Dashboard() {
     setFirstReport(first)
     setHistory(hist)
     setCooldownMs(msUntilNextAnalysis(latest))
+    setAnalysisError(refreshError)
     setStatus('ready')
   }, [])
 
@@ -164,14 +184,21 @@ export default function Dashboard() {
     setLinkError('')
     setLinking(true)
     try {
+      // Linking the profile is a real, independent success — commit it even if
+      // the analysis that follows fails (e.g. RSO not live yet).
       const prof = await linkRiotId(user.id, trimmed, linkRegion)
       setProfile(prof)
       setStatus('ready')
-      const saved = await runAnalysisAndSave(user.id, prof.riot_id, prof.region)
-      setLatestReport(saved)
-      setFirstReport(saved)
-      setHistory([saved])
-      setCooldownMs(msUntilNextAnalysis(saved))
+      setAnalysisError('')
+      try {
+        const saved = await runAnalysisAndSave(user.id, prof.riot_id, prof.region)
+        setLatestReport(saved)
+        setFirstReport(saved)
+        setHistory([saved])
+        setCooldownMs(msUntilNextAnalysis(saved))
+      } catch (analysisErr) {
+        setAnalysisError(describeAnalysisError(analysisErr))
+      }
     } catch (err) {
       setLinkError(err.message || 'Failed to link Riot ID')
     } finally {
@@ -181,13 +208,14 @@ export default function Dashboard() {
 
   async function handleManualRerun() {
     if (cooldownMs > 0 || analyzing) return
+    setAnalysisError('')
     try {
       const saved = await runAnalysisAndSave(user.id, profile.riot_id, profile.region)
       setLatestReport(saved)
       setHistory(h => [saved, ...h].slice(0, 6))
       setCooldownMs(msUntilNextAnalysis(saved))
     } catch (err) {
-      setError(err.message || 'Analysis failed')
+      setAnalysisError(describeAnalysisError(err))
     }
   }
 
@@ -221,7 +249,7 @@ export default function Dashboard() {
   if (status === 'no-profile') {
     return (
       <div className={styles.centerPage}>
-        <div className={styles.linkCard}>
+        <div className={`${styles.linkCard} v-cut-lg`}>
           <div className={styles.linkCardHeader}>
             <VantageLogo size={26} />
             <span className={styles.wordmark}>VANTAGE</span>
@@ -232,7 +260,7 @@ export default function Dashboard() {
           </p>
 
           {rsoConfigured ? (
-            <button className={styles.linkSubmitBtn} onClick={handleRiotSignIn}>
+            <button className={`${styles.linkSubmitBtn} v-cut-sm`} onClick={handleRiotSignIn}>
               Sign in with Riot Games
             </button>
           ) : (
@@ -259,7 +287,7 @@ export default function Dashboard() {
                   </select>
                 </div>
                 {linkError && <p className={styles.linkErrorMsg}>{linkError}</p>}
-                <button className={styles.linkSubmitBtn} type="submit" disabled={linking}>
+                <button className={`${styles.linkSubmitBtn} v-cut-sm`} type="submit" disabled={linking}>
                   {linking ? 'Linking & analyzing...' : 'Link account (manual, no RSO)'}
                 </button>
               </form>
@@ -310,7 +338,7 @@ export default function Dashboard() {
           <div className={styles.headerRow}>
             <h1 className={styles.riotIdHeading}>{profile.riot_id}</h1>
             <button
-              className={styles.rerunBtn}
+              className={`${styles.rerunBtn} v-cut-sm`}
               onClick={handleManualRerun}
               disabled={cooldownMs > 0 || analyzing}
             >
@@ -331,8 +359,21 @@ export default function Dashboard() {
           </p>
         </header>
 
+        {analysisError && (
+          <div className={`${styles.analysisErrorBanner} v-cut-md`}>
+            <span className={styles.analysisErrorLabel}>Analysis unavailable</span>
+            <p>{analysisError}</p>
+          </div>
+        )}
+
+        {!latestReport && !analysisError && (
+          <div className={`${styles.emptyState} v-cut-md`}>
+            <p>No analysis yet. Click <strong>Re-run analysis</strong> above to generate your first report.</p>
+          </div>
+        )}
+
         {latestReport?.summary && (
-          <div className={styles.summary}>
+          <div className={`${styles.summary} v-cut-md`}>
             <p className={styles.summaryLabel}>Coach summary</p>
             <p className={styles.summaryText}>{latestReport.summary}</p>
           </div>
@@ -341,7 +382,7 @@ export default function Dashboard() {
         <div className={styles.priorities}>
           <p className={styles.sectionLabel}>Priority findings</p>
           {(latestReport?.priorities || []).map(p => (
-            <div className={styles.priorityBlock} key={p.rank} data-severity={p.severity}>
+            <div className={`${styles.priorityBlock} v-cut-md`} key={p.rank} data-severity={p.severity}>
               <div className={styles.priorityHeader}>
                 <div className={styles.priorityMeta}>
                   <span className={styles.priorityRank} data-severity={p.severity}><span className={styles.rankDot} />Priority {p.rank}</span>
@@ -350,7 +391,7 @@ export default function Dashboard() {
                 <h2 className={styles.priorityTitle}>{p.label}</h2>
               </div>
               <p className={styles.priorityFinding}>{p.finding}</p>
-              <div className={styles.priorityFix}><span className={styles.fixLabel}>Fix</span><p>{p.fix}</p></div>
+              <div className={`${styles.priorityFix} v-cut-sm`}><span className={styles.fixLabel}>Fix</span><p>{p.fix}</p></div>
             </div>
           ))}
         </div>
