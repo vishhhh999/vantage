@@ -145,9 +145,9 @@ export default function TacticalRadar({ size = 480, dense = false }) {
   }, [size, dense])
 
   return (
-    <div className={styles.wrap} style={{ width: size, height: size }}>
-      <canvas ref={canvasRef} style={{ width: size, height: size }} />
-      <div className={styles.outerRing} style={{ width: size, height: size }} />
+    <div className={styles.wrap} style={{ width: size, height: size, maxWidth: '100%', aspectRatio: '1' }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+      <div className={styles.outerRing} />
       <span className={styles.cornerLabel} data-pos="tl">SCANNING</span>
       <span className={styles.cornerLabel} data-pos="br">20 MATCHES</span>
     </div>

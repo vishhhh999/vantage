@@ -138,23 +138,63 @@ Or connect your GitHub repo to Vercel for automatic deploys on push.
 ## Project structure
 
 ```
+api/
+├── riot.js              # Proxies Riot API calls (keeps X-Riot-Token server-side)
+├── riot-token.js        # RSO OAuth code exchange (keeps client_secret server-side)
+└── anthropic.js         # Proxies Claude API calls
+
 src/
 ├── pages/
-│   ├── Landing.jsx       # Marketing + input form
-│   ├── Landing.module.css
-│   ├── Report.jsx        # Core product — analysis output
-│   ├── Report.module.css
-│   └── Dashboard.jsx     # v2 placeholder
+│   ├── Landing.jsx / .module.css       # Marketing page + sample report
+│   ├── Login.jsx / .module.css         # Magic-link sign-in
+│   ├── Dashboard.jsx / .module.css     # Signed-in home — linked account, auto-refresh, progress
+│   ├── Report.jsx / .module.css        # Standalone analysis view
+│   └── RiotCallback.jsx / .module.css  # RSO redirect handler
+├── components/
+│   └── TacticalRadar.jsx / .module.css # Interactive HUD-style visual
 ├── lib/
-│   ├── riot.js           # Riot API client
-│   ├── scoring.js        # Decision error framework
+│   ├── riot.js           # Riot API client + VAL-CONTENT-V1 name resolver
+│   ├── riotAuth.js        # RSO authorize URL + code exchange (client-side half)
+│   ├── scoring.js        # Decision error framework (parses the REAL Riot match schema)
+│   ├── analysis.js       # Shared pipeline: Riot -> scoring -> Claude coaching
 │   ├── coaching.js       # Claude API prompt engine
-│   └── supabase.js       # Supabase client
+│   ├── assets.js         # Agent/rank/map name -> local asset path resolver
+│   ├── dashboard.js      # Supabase queries (profile, reports, cooldown)
+│   └── supabase.js       # Supabase client (singleton-guarded against HMR duplication)
 ├── styles/
-│   └── globals.css       # Design tokens
+│   └── globals.css       # Design tokens + tactical clip-path utilities
 ├── App.jsx               # Router
 └── main.jsx              # Entry point
+
+public/
+├── assets/
+│   ├── agents/   # 29 agent portraits (.webp, 256x256)
+│   ├── ranks/    # 25 rank badges (.png)
+│   ├── maps/     # 13 map images
+│   └── weapons/  # 16 weapon icons (not yet wired into any UI — see note below)
+├── icons/        # PWA app icons (192/512/maskable/apple-touch/favicon)
+└── manifest.json # PWA manifest
 ```
+
+### A note on the data pipeline correctness fix
+
+Earlier versions of `scoring.js` were written against an **unofficial** third-party API's response shape (`match.players.all_players`, `player.character`, `player.damage_made`, etc.) even though the app calls Riot's **official** `VAL-MATCH-V1`, which has a completely different schema (`match.players[]`, `player.characterId` as a UUID, per-round damage nested in `roundResults[].playerStats[]`, and so on). It also had a debug fallback that would silently pick *any* player whose name contained "john" if the real PUUID lookup failed. Both are fixed now — `scoring.js` parses the actual official schema, and agent/map UUIDs are resolved via `VAL-CONTENT-V1` (fetched once per analysis and cached in memory) rather than a hardcoded UUID table, so it won't go stale when Riot ships new agents.
+
+### Weapons
+
+16 weapon icons are in `public/assets/weapons/` but nothing in the scoring model currently tracks per-weapon stats — `VAL-MATCH-V1`'s round-level `economy.weapon` field would need to be aggregated into a new score category to make use of them. Not wired in yet; flagging so they're not mistaken for a bug.
+
+---
+
+## PWA / Add to Home Screen
+
+The app has a full manifest + icon set and iOS meta tags, so it installs as a home-screen app on both Android (Chrome reads `manifest.json` directly and offers "Add to Home Screen") and iOS (Safari → Share → "Add to Home Screen", using the `apple-touch-icon` and `apple-mobile-web-app-*` meta tags in `index.html`). No service worker is included — this gives an app-like icon/launch/status-bar experience but not offline support. If you want offline caching later, that's a separate addition (Workbox or a hand-rolled service worker).
+
+---
+
+## Typography licensing
+
+Bebas Neue (display) and Barlow (body) are currently used as free, license-clean substitutes for Tungsten and DIN Next respectively — both are Google Fonts, no attribution or licensing cost required. If you have licensed access to Tungsten/DIN Next and want the exact reference typefaces, send the font files and their license terms and they can be self-hosted via `@font-face` in `globals.css` in place of the Google Fonts import in `index.html`.
 
 ---
 

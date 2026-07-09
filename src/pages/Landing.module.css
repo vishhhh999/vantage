@@ -171,6 +171,8 @@
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;
 }
 .scLeft { display: flex; align-items: center; gap: 16px; }
+.scRankBadge { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+.scAgentIcon { width: 40px; height: 40px; object-fit: cover; border: 1px solid var(--border); margin-left: 8px; flex-shrink: 0; }
 .scName { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.02em; text-transform: uppercase; }
 .scName span { color: var(--text-tertiary); font-family: var(--font-body); font-weight: 600; text-transform: none; }
 .scMeta { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; letter-spacing: 0.04em; }
@@ -245,6 +247,17 @@
 }
 .scDetailTitle { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.01em; text-transform: uppercase; margin-bottom: 20px; }
 .scDetailFinding { font-size: 14px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 24px; }
+
+.scMapRow { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.scMapChip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--elevated); border: 1px solid var(--border);
+  padding: 8px 14px 8px 8px;
+}
+.scMapChipImg { width: 36px; height: 36px; object-fit: cover; }
+.scMapChipName { display: block; font-size: 12px; color: var(--text-secondary); text-transform: capitalize; }
+.scMapChipWr { display: block; font-family: var(--font-display); font-size: 15px; color: var(--text-tertiary); margin-top: 2px; }
+.scMapChipWr[data-good="true"] { color: var(--success); }
 .scFix {
   display: flex; gap: 14px; align-items: flex-start;
   background: var(--accent-dim); border: 1px solid var(--accent-border);

@@ -60,12 +60,34 @@
   background: var(--accent);
 }
 
+.riotIdRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.rankBadgeImg {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .riotId {
   font-family: var(--font-display);
-  font-size: clamp(36px, 5.5vw, 60px);
+  font-size: clamp(32px, 5vw, 52px);
   text-transform: uppercase;
   letter-spacing: 0.01em;
-  margin-bottom: 36px;
+}
+
+.rankName {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-weight: 600;
 }
 
 .overviewRow {
@@ -248,14 +270,22 @@
 .agentGrid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .agentRow {
   display: grid;
-  grid-template-columns: 120px 1fr 48px 32px;
+  grid-template-columns: 32px 110px 1fr 48px 32px;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+}
+
+.agentIcon {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  background: var(--elevated);
+  border: 1px solid var(--border);
 }
 
 .agentName {
@@ -284,12 +314,87 @@
   color: var(--text-tertiary);
   text-align: right;
 }
-.agentWr[data-good="true"] { color: var(--accent); }
+.agentWr[data-good="true"] { color: var(--success); }
 
 .agentGames {
   font-size: 12px;
   color: var(--text-tertiary);
   text-align: right;
+}
+
+/* ─── MAP BREAKDOWN ─── */
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.mapCard {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.mapCard:hover { border-color: var(--border-strong); }
+
+.mapThumbWrap {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.mapThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mapCardInfo {
+  padding: 14px 16px;
+}
+
+.mapCardName {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.mapCardBar {
+  height: 4px;
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.mapCardFill {
+  height: 100%;
+  background: var(--border-strong);
+  transition: width 0.6s ease;
+}
+.mapCardFill[data-good="true"] { background: var(--success); }
+
+.mapCardMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mapCardWr {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.mapCardWr[data-good="true"] { color: var(--success); }
+
+.mapCardGames {
+  font-size: 11px;
+  color: var(--text-tertiary);
 }
 
 .footer {
@@ -421,8 +526,17 @@
 @media (max-width: 768px) {
   .content { padding: 48px 24px 80px; }
   .overviewRow { flex-wrap: wrap; gap: 24px; }
-  .agentRow { grid-template-columns: 100px 1fr 44px 28px; }
+  .riotIdRow { gap: 14px; }
+  .rankBadgeImg { width: 48px; height: 48px; }
+  .agentRow { grid-template-columns: 28px 90px 1fr 40px 26px; gap: 10px; }
+  .mapGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
   .footer { flex-direction: column; gap: 16px; }
+}
+
+@media (max-width: 480px) {
+  .agentRow { grid-template-columns: 24px 1fr 36px 24px; }
+  .agentName { display: none; }
+  .mapGrid { grid-template-columns: 1fr 1fr; }
 }
 
 .footerRight { display: flex; align-items: center; gap: 10px; }

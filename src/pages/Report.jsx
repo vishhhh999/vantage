@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { runFullAnalysis } from '../lib/analysis'
+import { agentIconPath, mapImagePath, rankBadgePath } from '../lib/assets'
 import styles from './Report.module.css'
 
 const STAGES = [
@@ -74,6 +75,8 @@ export default function Report() {
   }
 
   const { overview, priorities: displayPriorities, summary } = result
+  const rankName = overview?.rankName
+  const rankBadge = rankBadgePath(rankName)
 
   return (
     <div className={styles.page}>
@@ -85,7 +88,13 @@ export default function Report() {
       <div className={styles.content}>
         <header className={styles.header}>
           <p className={styles.eyebrow}>Vantage Report</p>
-          <h1 className={styles.riotId}>{riotId}</h1>
+          <div className={styles.riotIdRow}>
+            {rankBadge && <img src={rankBadge} alt={rankName} className={styles.rankBadgeImg} />}
+            <div>
+              <h1 className={styles.riotId}>{riotId}</h1>
+              {rankName && <p className={styles.rankName}>{rankName}</p>}
+            </div>
+          </div>
           {overview && (
             <div className={styles.overviewRow}>
               <div className={styles.overviewStat}>
@@ -152,8 +161,10 @@ export default function Report() {
                 .sort((a, b) => b[1].total - a[1].total)
                 .map(([agent, data]) => {
                   const wr = (data.wins / data.total) * 100
+                  const icon = agentIconPath(agent)
                   return (
                     <div className={styles.agentRow} key={agent}>
+                      {icon && <img src={icon} alt={agent} className={styles.agentIcon} />}
                       <span className={styles.agentName}>{agent}</span>
                       <div className={styles.agentBar}>
                         <div
@@ -173,10 +184,43 @@ export default function Report() {
           </div>
         )}
 
+        {overview && Object.keys(overview.maps).length > 0 && (
+          <div className={`${styles.breakdown} v-cut-md`}>
+            <p className={styles.breakdownLabel}>Map breakdown</p>
+            <div className={styles.mapGrid}>
+              {Object.entries(overview.maps)
+                .sort((a, b) => b[1].total - a[1].total)
+                .map(([map, data]) => {
+                  const wr = (data.wins / data.total) * 100
+                  const thumb = mapImagePath(map)
+                  return (
+                    <div className={`${styles.mapCard} v-cut-sm`} key={map}>
+                      {thumb && (
+                        <div className={styles.mapThumbWrap}>
+                          <img src={thumb} alt={map} className={styles.mapThumb} />
+                        </div>
+                      )}
+                      <div className={styles.mapCardInfo}>
+                        <span className={styles.mapCardName}>{map}</span>
+                        <div className={styles.mapCardBar}>
+                          <div className={styles.mapCardFill} style={{ width: `${wr}%` }} data-good={wr >= 50} />
+                        </div>
+                        <div className={styles.mapCardMeta}>
+                          <span className={styles.mapCardWr} data-good={wr >= 50}>{wr.toFixed(0)}%</span>
+                          <span className={styles.mapCardGames}>{data.total} games</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        )}
+
         <div className={styles.footer}>
           <Link to="/" className={styles.newAnalysis}>Run another analysis</Link>
           <div className={styles.footerRight}>
-            <span className={styles.betaBadge}>v2-beta</span>
+            <span className={styles.betaBadge}>v3-beta</span>
             <p className={styles.footerNote}>Not affiliated with Riot Games</p>
           </div>
         </div>

@@ -7,6 +7,7 @@ import {
 } from '../lib/dashboard'
 import { runFullAnalysis } from '../lib/analysis'
 import { isRsoConfigured, buildRiotAuthorizeUrl } from '../lib/riotAuth'
+import { agentIconPath, rankBadgePath } from '../lib/assets'
 import styles from './Dashboard.module.css'
 
 const REGIONS = [
@@ -336,7 +337,15 @@ export default function Dashboard() {
         <header className={styles.header}>
           <p className={styles.eyebrow}>Dashboard</p>
           <div className={styles.headerRow}>
-            <h1 className={styles.riotIdHeading}>{profile.riot_id}</h1>
+            <div className={styles.riotIdRow}>
+              {overview?.rankName && rankBadgePath(overview.rankName) && (
+                <img src={rankBadgePath(overview.rankName)} alt={overview.rankName} className={styles.rankBadgeImg} />
+              )}
+              <div>
+                <h1 className={styles.riotIdHeading}>{profile.riot_id}</h1>
+                {overview?.rankName && <p className={styles.rankName}>{overview.rankName}</p>}
+              </div>
+            </div>
             <button
               className={`${styles.rerunBtn} v-cut-sm`}
               onClick={handleManualRerun}
@@ -396,6 +405,31 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {overview?.agents && Object.keys(overview.agents).length > 0 && (
+          <div className={`${styles.agentBreakdown} v-cut-md`}>
+            <p className={styles.sectionLabel}>Agent breakdown</p>
+            <div className={styles.agentGrid}>
+              {Object.entries(overview.agents)
+                .sort((a, b) => b[1].total - a[1].total)
+                .map(([agent, data]) => {
+                  const wr = (data.wins / data.total) * 100
+                  const icon = agentIconPath(agent)
+                  return (
+                    <div className={styles.agentRow} key={agent}>
+                      {icon && <img src={icon} alt={agent} className={styles.agentIcon} />}
+                      <span className={styles.agentName}>{agent}</span>
+                      <div className={styles.agentBar}>
+                        <div className={styles.agentFill} style={{ width: `${wr}%` }} data-good={wr >= 50} />
+                      </div>
+                      <span className={styles.agentWr} data-good={wr >= 50}>{wr.toFixed(0)}%</span>
+                      <span className={styles.agentGames}>{data.total}g</span>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        )}
+
         {!isFirstReport && firstOverview && overview && (
           <div className={styles.progressSection}>
             <p className={styles.sectionLabel}>Your progress with VANTAGE</p>
@@ -430,7 +464,7 @@ export default function Dashboard() {
         <div className={styles.footer}>
           <Link to="/" className={styles.newAnalysis}>← Back to home</Link>
           <div className={styles.footerRight}>
-            <span className={styles.betaBadge}>v2-beta</span>
+            <span className={styles.betaBadge}>v3-beta</span>
             <p className={styles.footerNote}>Not affiliated with Riot Games</p>
           </div>
         </div>

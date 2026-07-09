@@ -1,5 +1,25 @@
-export function scoreMatches(matches, puuid) {
-  const stats = matches.map(match => extractPlayerStats(match, puuid)).filter(Boolean)
+// Rank tier IDs are stable across Riot's official API and have not changed
+// since the Ascendant/Immortal 1-3 split was introduced — this table is safe
+// to hardcode, unlike agent/map UUIDs which come from VAL-CONTENT-V1 instead.
+const TIER_NAMES = [
+  'Unranked', null, null,
+  'Iron 1', 'Iron 2', 'Iron 3',
+  'Bronze 1', 'Bronze 2', 'Bronze 3',
+  'Silver 1', 'Silver 2', 'Silver 3',
+  'Gold 1', 'Gold 2', 'Gold 3',
+  'Platinum 1', 'Platinum 2', 'Platinum 3',
+  'Diamond 1', 'Diamond 2', 'Diamond 3',
+  'Ascendant 1', 'Ascendant 2', 'Ascendant 3',
+  'Immortal 1', 'Immortal 2', 'Immortal 3',
+  'Radiant',
+]
+
+export function getRankName(tier) {
+  return TIER_NAMES[tier] || 'Unranked'
+}
+
+export function scoreMatches(matches, puuid, resolver) {
+  const stats = matches.map(match => extractPlayerStats(match, puuid, resolver)).filter(Boolean)
 
   if (stats.length === 0) return null
 
@@ -10,39 +30,80 @@ export function scoreMatches(matches, puuid) {
   }
 }
 
-function extractPlayerStats(match, puuid) {
-  if (!match?.players) return null
-
-  const player = match.players.all_players?.find(p => p.puuid === puuid)
-    || match.players.all_players?.find(p => p.name && p.name.toLowerCase().includes('john'))
-
+function extractPlayerStats(match, puuid, resolver) {
+  const player = match?.players?.find(p => p.puuid === puuid)
   if (!player) return null
 
+  const teamId = player.teamId
+  const teams = match.teams || []
+  const myTeam = teams.find(t => t.teamId === teamId)
+  const oppTeam = teams.find(t => t.teamId !== teamId)
+
   const rounds = match.roundResults || []
-  const team = player.team?.toLowerCase()
-  const teamRounds = rounds.filter(r => r.winningTeam?.toLowerCase() === team)
+  let ownRounds = myTeam?.roundsWon
+  let oppRounds = oppTeam?.roundsWon
+  let won = myTeam?.won
+
+  // Defensive fallback if the teams array is missing/malformed on some match types.
+  if (ownRounds == null || oppRounds == null) {
+    ownRounds = rounds.filter(r => r.winningTeam === teamId).length
+    oppRounds = rounds.length - ownRounds
+    won = ownRounds > oppRounds
+  }
+
+  // Damage/headshot data lives per-round, per-player, and has to be aggregated
+  // across the match. `playerStats[].damage[]` entries are damage THIS player
+  // dealt to others; to get damage RECEIVED we scan every round's playerStats
+  // for entries where someone else's damage[] targeted our puuid.
+  let damageDealt = 0, damageTaken = 0, headshots = 0, bodyshots = 0, legshots = 0
+
+  rounds.forEach(round => {
+    const roundPlayers = round.playerStats || []
+    const mine = roundPlayers.find(ps => ps.puuid === puuid)
+    if (mine?.damage) {
+      mine.damage.forEach(d => {
+        damageDealt += d.damage || 0
+        headshots += d.headshots || 0
+        bodyshots += d.bodyshots || 0
+        legshots += d.legshots || 0
+      })
+    }
+    roundPlayers.forEach(ps => {
+      if (ps.puuid === puuid) return
+      ;(ps.damage || []).forEach(d => {
+        if (d.receiver === puuid) damageTaken += d.damage || 0
+      })
+    })
+  })
+
+  const casts = player.stats?.abilityCasts || {}
 
   return {
-    matchId: match.metadata?.matchId,
-    map: match.metadata?.map,
-    agent: player.character,
-    team,
-    won: teamRounds.length > rounds.length / 2,
-    score: { own: teamRounds.length, opp: rounds.length - teamRounds.length },
+    matchId: match.matchInfo?.matchId,
+    gameStartMillis: match.matchInfo?.gameStartMillis || 0,
+    map: resolver ? resolver.mapName(match.matchInfo?.mapId) : match.matchInfo?.mapId,
+    agent: resolver ? resolver.characterName(player.characterId) : player.characterId,
+    team: teamId,
+    won: Boolean(won),
+    score: { own: ownRounds, opp: oppRounds },
+    rankTier: player.competitiveTier ?? 0,
     stats: {
       kills: player.stats?.kills ?? 0,
-      deaths: player.stats?.deaths ?? 1,
+      deaths: player.stats?.deaths || 1,
       assists: player.stats?.assists ?? 0,
       score: player.stats?.score ?? 0,
-      headshots: player.stats?.headshots ?? 0,
-      bodyshots: player.stats?.bodyshots ?? 0,
-      legshots: player.stats?.legshots ?? 0,
-      damage: player.damage_made ?? 0,
-      damageTaken: player.damage_received ?? 0,
+      headshots,
+      bodyshots,
+      legshots,
+      damage: damageDealt,
+      damageTaken,
     },
-    economy: player.economy || {},
-    abilities: player.ability_casts || {},
-    rounds,
+    abilities: {
+      grenade: casts.grenadeCasts || 0,
+      ability1: casts.ability1Casts || 0,
+      ability2: casts.ability2Casts || 0,
+      ultimate: casts.ultimateCasts || 0,
+    },
   }
 }
 
@@ -74,6 +135,12 @@ function computeOverview(stats) {
     if (s.won) mapMap[s.map].wins++
   })
 
+  // "Current rank" is read from whichever match is most recent by start time —
+  // matchlist ordering isn't guaranteed, so this is found explicitly rather
+  // than assumed from array position.
+  const mostRecent = stats.reduce((latest, s) =>
+    (!latest || s.gameStartMillis > latest.gameStartMillis) ? s : latest, null)
+
   return {
     matches: n,
     wins,
@@ -83,6 +150,7 @@ function computeOverview(stats) {
     hsPercent: totalShots > 0 ? (totalHS / totalShots) * 100 : 0,
     agents: agentMap,
     maps: mapMap,
+    rankTier: mostRecent?.rankTier ?? 0,
   }
 }
 
@@ -208,13 +276,12 @@ function scoreLowAssists(stats) {
 }
 
 function scoreAbilityUnderutilization(stats) {
-  const withAbilities = stats.filter(s => s.abilities && Object.keys(s.abilities).length > 0)
-  if (withAbilities.length === 0) return { score: 0, data: null }
+  if (stats.length === 0) return { score: 0, data: null }
 
-  const avgTotal = withAbilities.reduce((a, s) => {
+  const avgTotal = stats.reduce((a, s) => {
     const total = Object.values(s.abilities).reduce((x, y) => x + (y || 0), 0)
     return a + total
-  }, 0) / withAbilities.length
+  }, 0) / stats.length
 
   return {
     score: avgTotal < 8 ? Math.min(100, (8 - avgTotal) * 12) : 0,

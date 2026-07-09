@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion'
 import TacticalRadar from '../components/TacticalRadar'
+import { mapImagePath } from '../lib/assets'
 import styles from './Landing.module.css'
 
 const REGIONS = [
@@ -26,7 +27,12 @@ const SAMPLE_PRIORITIES = [
     stat: '31.6% WR on Corrode',
     finding: 'Corrode: 31.6% (6W–12L). Bind: 42.9% (9W–12L). Haven: 75% (15W–5L). Your read on 3-site maps is strong. Your rotation logic breaks on maps with tight corridors — you\'re playing the same tempo regardless of map geometry.',
     fix: 'On Corrode and Bind, slow your default tempo by one beat. These maps punish commitment — read before pushing, don\'t push to read.',
-    rounds: 'Costs est. 3–5 rounds per session'
+    rounds: 'Costs est. 3–5 rounds per session',
+    maps: [
+      { name: 'corrode', wr: 31.6 },
+      { name: 'bind', wr: 42.9 },
+      { name: 'haven', wr: 75.0 },
+    ]
   },
   {
     rank: 3, severity: 'high', impact: 74,
@@ -334,11 +340,12 @@ export default function Landing() {
             <div className={`${styles.sampleCard} v-cut-lg`}>
               <div className={styles.scHeader}>
                 <div className={styles.scLeft}>
-                  <VantageLogo size={16} />
+                  <img src="/assets/ranks/platinum-1.png" alt="Platinum 1" className={styles.scRankBadge} />
                   <div>
                     <p className={styles.scName}>john pork<span>#hax</span></p>
                     <p className={styles.scMeta}>Platinum 1 · 20 matches · AP</p>
                   </div>
+                  <img src="/assets/agents/raze.webp" alt="Raze" className={styles.scAgentIcon} />
                 </div>
                 <div className={styles.scStats}>
                   {[['48.9%','Win rate'],['1.18','K/D'],['158.6','ADR'],['17.3%','HS%']].map(([v,l]) => (
@@ -405,6 +412,19 @@ export default function Landing() {
                     </div>
                     <h3 className={styles.scDetailTitle}>{SAMPLE_PRIORITIES[activePriority].label}</h3>
                     <p className={styles.scDetailFinding}>{SAMPLE_PRIORITIES[activePriority].finding}</p>
+                    {SAMPLE_PRIORITIES[activePriority].maps && (
+                      <div className={styles.scMapRow}>
+                        {SAMPLE_PRIORITIES[activePriority].maps.map(m => (
+                          <div className={`${styles.scMapChip} v-cut-sm`} key={m.name}>
+                            <img src={mapImagePath(m.name)} alt={m.name} className={styles.scMapChipImg} />
+                            <div>
+                              <span className={styles.scMapChipName}>{m.name}</span>
+                              <span className={styles.scMapChipWr} data-good={m.wr >= 50}>{m.wr}%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className={`${styles.scFix} v-cut-sm`}>
                       <span className={styles.scFixTag}>Fix</span>
                       <p>{SAMPLE_PRIORITIES[activePriority].fix}</p>
@@ -514,7 +534,7 @@ export default function Landing() {
           <span className={styles.wordmark}>VANTAGE</span>
         </div>
         <div className={styles.footerRight}>
-          <span className={styles.betaBadge}>v2-beta</span>
+          <span className={styles.betaBadge}>v3-beta</span>
           <span className={styles.footerNote}>Not affiliated with Riot Games, Inc.</span>
         </div>
       </footer>

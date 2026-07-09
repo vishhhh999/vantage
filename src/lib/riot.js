@@ -42,13 +42,59 @@ export async function getMatch(matchId, region = 'ap') {
   return riotFetch(`${host}/val/match/v1/matches/${matchId}`)
 }
 
+// VAL-CONTENT-V1 gives the authoritative characterId -> name and mapId -> name
+// mapping directly from Riot. This is deliberately not hardcoded: agent/map
+// UUIDs are stable but numerous, and a hand-maintained table would silently
+// go stale the moment Riot ships a new agent. Content rarely changes within
+// a session, so callers should fetch this once and reuse it.
+export async function getContent(region = 'ap') {
+  const host = ROUTING[region]
+  return riotFetch(`${host}/val/content/v1/contents`)
+}
+
+export function buildContentResolver(content) {
+  const characterMap = new Map()
+  const mapMap = new Map()
+
+  ;(content?.characters || []).forEach(c => {
+    if (c.id) characterMap.set(c.id.toLowerCase(), c.name)
+  })
+  ;(content?.maps || []).forEach(m => {
+    if (m.id) mapMap.set(m.id.toLowerCase(), m.name)
+    // mapUrl / assetPath sometimes differs in casing/format from the id used
+    // in match data, so also index by the trailing path segment as a fallback.
+    if (m.assetPath) {
+      const seg = m.assetPath.split('/').filter(Boolean).pop()
+      if (seg) mapMap.set(seg.toLowerCase(), m.name)
+    }
+  })
+
+  return {
+    characterName(characterId) {
+      if (!characterId) return 'Unknown'
+      return characterMap.get(characterId.toLowerCase()) || characterId
+    },
+    mapName(mapId) {
+      if (!mapId) return 'Unknown'
+      const direct = mapMap.get(mapId.toLowerCase())
+      if (direct) return direct
+      const seg = mapId.split('/').filter(Boolean).pop()
+      return (seg && mapMap.get(seg.toLowerCase())) || mapId
+    },
+  }
+}
+
 export async function fetchPlayerData(riotId, region = 'ap', matchCount = 20) {
   const { gameName, tagLine } = parseRiotId(riotId)
 
   const account = await getAccountByRiotId(gameName, tagLine, region)
   const { puuid } = account
 
-  const matchList = await getMatchList(puuid, region, matchCount)
+  const [matchList, content] = await Promise.all([
+    getMatchList(puuid, region, matchCount),
+    getContent(region),
+  ])
+
   const matchIds = matchList.history?.map(m => m.matchId) || []
 
   if (matchIds.length === 0) {
@@ -59,5 +105,5 @@ export async function fetchPlayerData(riotId, region = 'ap', matchCount = 20) {
     matchIds.slice(0, matchCount).map(id => getMatch(id, region))
   )
 
-  return { account, matches, puuid }
+  return { account, matches, puuid, resolver: buildContentResolver(content) }
 }
