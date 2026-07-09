@@ -41,6 +41,11 @@
   padding: 13px 12px; font-size: 13px; color: var(--text-secondary); outline: none; cursor: pointer;
 }
 .linkErrorMsg { font-size: 12px; color: var(--error); }
+.rsoNotice {
+  font-size: 12px; line-height: 1.6; color: var(--warning);
+  background: rgba(242,153,74,0.06); border: 1px solid rgba(242,153,74,0.18);
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 20px;
+}
 .linkSubmitBtn {
   background: var(--accent); color: var(--bg); border: none; border-radius: var(--radius-sm);
   padding: 14px; font-size: 14px; font-weight: 700; transition: opacity 0.2s;

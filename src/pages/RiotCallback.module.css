@@ -1,0 +1,22 @@
+.page {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 40px; padding: 24px;
+}
+.wordmark { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.2em; }
+.wordmark span { color: var(--accent); }
+
+.stages { display: flex; flex-direction: column; gap: 16px; }
+.stage { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-tertiary); transition: color 0.3s; }
+.stage[data-active="true"] { color: var(--text-primary); }
+.stage[data-done="true"] { color: var(--success); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.stage[data-active="true"] .dot { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.errorBox { text-align: center; max-width: 420px; }
+.errorLabel { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--error); margin-bottom: 12px; }
+.errorMsg { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+.retryBtn {
+  display: inline-block; background: var(--accent); color: var(--bg);
+  border-radius: var(--radius-sm); padding: 12px 24px; font-size: 14px; font-weight: 600;
+}

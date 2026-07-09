@@ -238,15 +238,6 @@
   flex-wrap: wrap; gap: 14px;
 }
 .scCta > p { font-size: 14px; color: var(--text-secondary); }
-.scCtaForm { display: flex; gap: 8px; }
-.scInput {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 9px 13px;
-  font-size: 13px; color: var(--text-primary); outline: none;
-  width: 160px; transition: border-color 0.2s;
-}
-.scInput::placeholder { color: var(--text-tertiary); }
-.scInput:focus { border-color: var(--border-strong); }
 .scCtaBtn {
   background: var(--accent); color: #0e0e0e; border: none;
   border-radius: var(--radius-sm); padding: 9px 16px;

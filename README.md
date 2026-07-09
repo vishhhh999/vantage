@@ -65,8 +65,35 @@ VITE_ANTHROPIC_API_KEY=    # From console.anthropic.com
 - The match list endpoint uses PUUID, not Riot ID — you need to look up account first
 - Valorant API uses `/val/match/v1/` prefix, not `/lol/`
 - Player data requires opt-in — in production every user must authenticate via RSO
+- **Confirmed by real testing**: `account-v1` (name → PUUID lookup) works without RSO, but `val-match-v1` (actual match history) returns 403 without it — even with a fully approved production key that has the product attached. RSO is not optional once your app is live.
 
----
+### Riot Sign-On (RSO) — required for match data
+This is the actual fix for match history returning 403 despite an approved key. RSO proves the specific player consented to your app reading their data.
+
+**1. Request RSO client credentials from Riot.** This is not self-service — go to your app in the developer portal → Messages tab → ask Riot to provision an RSO client (`client_id` + `client_secret`) for VANTAGE. Reference the docs at `Implementing Riot Sign On` linked from the API policy page. This step can take time; nothing below works until Riot responds.
+
+**2. Set the redirect URI.** Tell Riot (and set in your env) something like:
+```
+https://your-domain.vercel.app/riot-callback
+```
+
+**3. Set environment variables** (see `.env.example`) — note `RIOT_CLIENT_ID` is intentionally set twice: once as `VITE_RIOT_CLIENT_ID` (public, used client-side to build the Riot login URL) and once as plain `RIOT_CLIENT_ID` (used server-side alongside the secret). `RIOT_CLIENT_SECRET` must never get a `VITE_` prefix — that would ship it to every browser.
+
+**4. How the flow works in this codebase:**
+```
+Dashboard "Sign in with Riot" button
+  → redirects to Riot's own login page (buildRiotAuthorizeUrl in src/lib/riotAuth.js)
+  → player logs in directly with Riot, consents to data sharing
+  → Riot redirects back to /riot-callback with a one-time code
+  → RiotCallback.jsx sends that code to /api/riot-token.js
+  → api/riot-token.js exchanges it server-side for an access token
+    (this is the only place the client_secret is used)
+  → resolves the player's real puuid, Riot ID, and active region
+  → links that verified identity to the signed-in Supabase user
+  → runs and saves the first analysis
+```
+
+Until RSO credentials are set, the dashboard falls back to manual Riot ID entry with a visible warning — it'll let you link a profile, but match analysis will still 403, because that's the actual Riot-side requirement, not a bug in this app.
 
 ## Supabase setup
 

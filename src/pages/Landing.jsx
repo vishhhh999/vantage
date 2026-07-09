@@ -171,10 +171,11 @@ export default function Landing() {
 
   function handleAnalyze(e) {
     e.preventDefault()
-    const trimmed = riotId.trim()
-    if (!trimmed.includes('#')) { setError('Use the format Name#TAG'); return }
-    setError('')
-    navigate(`/report/${encodeURIComponent(trimmed)}?region=${region}`)
+    // Riot requires players to authenticate via RSO before we can read their
+    // match history — an arbitrary typed Riot ID can no longer be analyzed
+    // anonymously. Route into sign-in; the real Riot ID gets confirmed there
+    // via Riot's own login, not from this field.
+    navigate('/login')
   }
 
   function handleContactSubmit(e) {
@@ -234,13 +235,13 @@ export default function Landing() {
               </select>
             </div>
             <button className={styles.cta} type="submit">
-              Analyze my matches
+              Sign in to analyze
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M2.5 7h9M7.5 3.5L11 7l-3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
             {error && <p className={styles.inputError}>{error}</p>}
-            <p className={styles.inputNote}>Free · Public profile required · No installs</p>
+            <p className={styles.inputNote}>Free · Sign in with Riot required · No installs</p>
           </motion.form>
         </motion.div>
       </section>
@@ -397,13 +398,8 @@ export default function Landing() {
               </div>
 
               <div className={styles.scCta}>
-                <p>This is your data. Run your own analysis.</p>
-                <form onSubmit={handleAnalyze} className={styles.scCtaForm}>
-                  <input className={styles.scInput} type="text" placeholder="YourName#TAG"
-                    value={riotId} onChange={e => { setRiotId(e.target.value); setError('') }}
-                    autoComplete="off" spellCheck={false} />
-                  <button className={styles.scCtaBtn} type="submit">Analyze free</button>
-                </form>
+                <p>This is real analysis. See it on your own matches.</p>
+                <button className={styles.scCtaBtn} onClick={handleAnalyze}>Sign in to analyze</button>
               </div>
             </div>
           </FadeUp>

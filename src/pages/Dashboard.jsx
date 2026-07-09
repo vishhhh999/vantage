@@ -6,6 +6,7 @@ import {
   getFirstReport, getReportHistory, saveReport, msUntilNextAnalysis
 } from '../lib/dashboard'
 import { runFullAnalysis } from '../lib/analysis'
+import { isRsoConfigured, buildRiotAuthorizeUrl } from '../lib/riotAuth'
 import styles from './Dashboard.module.css'
 
 const REGIONS = [
@@ -146,6 +147,16 @@ export default function Dashboard() {
     return () => clearInterval(tickRef.current)
   }, [cooldownMs > 0])
 
+  const rsoConfigured = isRsoConfigured()
+
+  function handleRiotSignIn() {
+    // `state` carries no secret — it's just a CSRF-style nonce. Identity
+    // linking happens after the callback via the already-authenticated
+    // Supabase session, not via this value.
+    const state = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())
+    window.location.href = buildRiotAuthorizeUrl(state)
+  }
+
   async function handleLinkSubmit(e) {
     e.preventDefault()
     const trimmed = linkRiotIdInput.trim()
@@ -215,31 +226,45 @@ export default function Dashboard() {
             <VantageLogo size={26} />
             <span className={styles.wordmark}>VANTAGE</span>
           </div>
-          <h1 className={styles.linkTitle}>Link your Riot ID</h1>
+          <h1 className={styles.linkTitle}>Link your Riot account</h1>
           <p className={styles.linkSubtitle}>
-            One account, one linked Riot ID. VANTAGE will auto-refresh your coaching report each time you sign in.
+            Sign in with Riot to verify it's really you. VANTAGE will auto-refresh your coaching report each time you sign in.
           </p>
-          <form onSubmit={handleLinkSubmit} className={styles.linkForm}>
-            <div className={styles.linkFields}>
-              <input
-                className={styles.linkInput}
-                type="text"
-                placeholder="YourName#TAG"
-                value={linkRiotIdInput}
-                onChange={e => { setLinkRiotIdInput(e.target.value); setLinkError('') }}
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
-              />
-              <select className={styles.linkRegionSelect} value={linkRegion} onChange={e => setLinkRegion(e.target.value)}>
-                {REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
-            </div>
-            {linkError && <p className={styles.linkErrorMsg}>{linkError}</p>}
-            <button className={styles.linkSubmitBtn} type="submit" disabled={linking}>
-              {linking ? 'Linking & analyzing...' : 'Link account'}
+
+          {rsoConfigured ? (
+            <button className={styles.linkSubmitBtn} onClick={handleRiotSignIn}>
+              Sign in with Riot Games
             </button>
-          </form>
+          ) : (
+            <>
+              <div className={styles.rsoNotice}>
+                Riot sign-in isn't wired up yet on this deployment. Using manual entry below for now — match analysis
+                will fail until RSO credentials are configured, since Riot requires players to authenticate before
+                their match history can be read.
+              </div>
+              <form onSubmit={handleLinkSubmit} className={styles.linkForm}>
+                <div className={styles.linkFields}>
+                  <input
+                    className={styles.linkInput}
+                    type="text"
+                    placeholder="YourName#TAG"
+                    value={linkRiotIdInput}
+                    onChange={e => { setLinkRiotIdInput(e.target.value); setLinkError('') }}
+                    autoComplete="off"
+                    spellCheck={false}
+                    autoFocus
+                  />
+                  <select className={styles.linkRegionSelect} value={linkRegion} onChange={e => setLinkRegion(e.target.value)}>
+                    {REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+                {linkError && <p className={styles.linkErrorMsg}>{linkError}</p>}
+                <button className={styles.linkSubmitBtn} type="submit" disabled={linking}>
+                  {linking ? 'Linking & analyzing...' : 'Link account (manual, no RSO)'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     )
