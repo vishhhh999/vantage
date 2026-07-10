@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ProcessFlow from '../components/ProcessFlow'
+import DecisionFeed from '../components/DecisionFeed'
 import styles from './Process.module.css'
 
 function VantageLogo({ size = 22 }) {
@@ -24,6 +25,35 @@ function Reveal({ children, delay = 0 }) {
     </motion.div>
   )
 }
+
+const CATEGORIES = [
+  'Economy discipline', 'Rotation logic', 'Role & agent fit', 'Utility timing',
+  'Map-specific patterns', 'Clutch conversion', 'Entry timing', 'Trade windows',
+  'Site retake structure', 'Crosshair placement', 'Session degradation', 'Comms recovery',
+]
+
+const FAQ = [
+  {
+    q: 'Is this affiliated with Riot Games?',
+    a: 'No. VANTAGE is an independent tool built on Riot\'s official public API. It\'s not endorsed by, sponsored by, or affiliated with Riot Games in any way — same as any third-party stats site.',
+  },
+  {
+    q: 'How is this different from Tracker.gg or similar sites?',
+    a: 'Those tools are built to show you everything — every stat, every match, sortable every way. That\'s useful for lookup, but it puts the work of finding a pattern on you. VANTAGE inverts that: it does the pattern-finding first and only surfaces the handful of things actually worth changing.',
+  },
+  {
+    q: 'Do you store my match data forever?',
+    a: 'Reports are stored so you can track your history over time, tied to your account with row-level access — only you can read your own data. You can request full deletion at any time (see the privacy policy).',
+  },
+  {
+    q: 'Can VANTAGE see my Riot password?',
+    a: 'No. Sign-in happens entirely on Riot\'s own login page. VANTAGE receives a token proving you signed in — never your credentials.',
+  },
+  {
+    q: 'Why only the last 20 matches?',
+    a: 'It\'s a large enough sample to separate real patterns from one bad game, without diluting recent form with matches from a different patch, rank, or role you\'ve since moved past.',
+  },
+]
 
 const PRINCIPLES = [
   {
@@ -116,6 +146,50 @@ export default function Process() {
             </div>
           </div>
         </Reveal>
+      </section>
+
+      <section className={styles.categorySection}>
+        <Reveal>
+          <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />The scoring framework</p>
+          <h2 className={styles.sectionHeadline}>Twelve categories.<br /><span>Every match, every time.</span></h2>
+        </Reveal>
+        <div className={styles.categoryGrid}>
+          {CATEGORIES.map((c, i) => (
+            <Reveal key={c} delay={i * 0.04}>
+              <div className={styles.categoryChip}>
+                <span className={styles.categoryNum}>{String(i + 1).padStart(2, '0')}</span>
+                {c}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.feedSection}>
+        <Reveal>
+          <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />What it catches</p>
+          <h2 className={styles.sectionHeadline}>A sample of the kind<br /><span>of thing that gets flagged.</span></h2>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <DecisionFeed />
+        </Reveal>
+      </section>
+
+      <section className={styles.faqSection}>
+        <Reveal>
+          <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Questions</p>
+          <h2 className={styles.sectionHeadline}>Before you sign in.</h2>
+        </Reveal>
+        <div className={styles.faqList}>
+          {FAQ.map((f, i) => (
+            <Reveal key={f.q} delay={i * 0.06}>
+              <div className={styles.faqItem}>
+                <h3>{f.q}</h3>
+                <p>{f.a}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       <section className={styles.principlesSection}>

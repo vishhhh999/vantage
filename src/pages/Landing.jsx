@@ -2,9 +2,26 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion'
 import ProcessFlow from '../components/ProcessFlow'
-import SignalConsole from '../components/SignalConsole'
-import { agentIconPath, mapImagePath, rankBadgePath } from '../lib/assets'
+import TacticalMinimap from '../components/TacticalMinimap'
+import ShaderBackground from '../components/ShaderBackground'
+import ComparisonPanel from '../components/ComparisonPanel'
+import DecisionFeed from '../components/DecisionFeed'
+import { MapGrid, AgentCompare, TrendChart, RadialGauge, SplitBars, WeaponDuels } from '../components/ReportVisuals'
+import { agentIconPath, rankBadgePath } from '../lib/assets'
 import styles from './Landing.module.css'
+
+function PriorityVisual({ visual }) {
+  if (!visual) return null
+  switch (visual.type) {
+    case 'agentCompare': return <AgentCompare from={visual.from} to={visual.to} />
+    case 'mapGrid': return <MapGrid maps={visual.maps} />
+    case 'trend': return <TrendChart points={visual.points} flagFrom={visual.flagFrom} />
+    case 'gauge': return <RadialGauge value={visual.value} label={visual.label} />
+    case 'splitBars': return <SplitBars a={visual.a} b={visual.b} />
+    case 'weaponDuel': return <WeaponDuels weapons={visual.weapons} />
+    default: return null
+  }
+}
 
 const REGIONS = [
   { value: 'ap', label: 'AP — SEA / OCE' },
@@ -24,28 +41,51 @@ const SAMPLE_REPORTS = [
     rankSlug: 'platinum-1', rankName: 'Platinum 1',
     agentSlug: 'raze', region: 'AP', matches: 20,
     stats: [['48.9%', 'Win rate'], ['1.18', 'K/D'], ['158.6', 'ADR'], ['17.3%', 'HS%']],
-    summary: "Your ceiling is clearly Immortal — the data proves it. Your floor is what's keeping you in Platinum. Three patterns are responsible for the gap. Fix these in order.",
+    summary: "Your ceiling is clearly Immortal — the data proves it. Your floor is what's keeping you in Platinum. Five patterns are responsible for the gap. Fix these in order.",
     priorities: [
       {
         rank: 1, severity: 'critical', impact: 82,
         label: 'Agent-role mismatch', stat: '45.3% WR on main',
         finding: "You've played Raze in 53 of your last 139 matches with a 45.3% winrate. Your Jett winrate is 65.2% over 23 matches — a 20-point gap. You're defaulting to the wrong agent every session based on habit, not data.",
         fix: 'Make Jett your primary. The winrate gap is too large to ignore. Raze is situational — maps with long sightlines where her blast pack creates genuine angles.',
-        rounds: 'Costs est. 4–6 rounds per session', mapSlug: null,
+        rounds: 'Costs est. 4–6 rounds per session',
+        visual: { type: 'agentCompare', from: { slug: 'raze', wr: 45 }, to: { slug: 'jett', wr: 65 } },
       },
       {
         rank: 2, severity: 'high', impact: 61,
         label: 'Map-specific breakdown', stat: '31.6% WR on Corrode',
         finding: "Corrode: 31.6% (6W–12L). Bind: 42.9% (9W–12L). Haven: 75% (15W–5L). Your read on 3-site maps is strong. Your rotation logic breaks on maps with tight corridors — you're playing the same tempo regardless of map geometry.",
         fix: "On Corrode and Bind, slow your default tempo by one beat. These maps punish commitment — read before pushing, don't push to read.",
-        rounds: 'Costs est. 3–5 rounds per session', mapSlug: 'corrode',
+        rounds: 'Costs est. 3–5 rounds per session',
+        visual: { type: 'mapGrid', maps: [
+          { slug: 'corrode', wr: 32, record: '6W–12L', tier: 'worst' },
+          { slug: 'bind', wr: 43, record: '9W–12L', tier: 'mid' },
+          { slug: 'haven', wr: 75, record: '15W–5L', tier: 'best' },
+        ]},
       },
       {
         rank: 3, severity: 'high', impact: 74,
         label: 'Session degradation', stat: 'K/D drops 0.4 after match 6',
-        finding: 'You played 10 matches on March 11. Your DDΔ that day was nearly neutral despite 5 wins. Your best single match was 2.1 K/D. Your worst was 0.5 K/D. Same player, same week. Your floor is costing you more than your ceiling gains.',
+        finding: 'You played 10 matches on March 11. Your best single match was 2.1 K/D. Your worst was 0.5 K/D — same player, same week. Match-by-match, the drop starts almost exactly after your 6th game of the session.',
         fix: "Hard cap: 5 matches per session. If you go 2 consecutive losses with negative DDΔ — stop. The data shows you don't recover within the same session.",
-        rounds: 'Costs est. 5–8 rounds per session', mapSlug: null,
+        rounds: 'Costs est. 5–8 rounds per session',
+        visual: { type: 'trend', points: [1.6, 1.8, 1.5, 1.9, 1.4, 1.7, 1.1, 0.7, 0.9, 0.5], flagFrom: 6 },
+      },
+      {
+        rank: 4, severity: 'medium', impact: 52,
+        label: 'Economy discipline', stat: 'Full-buy into 34% of eco losses',
+        finding: "In rounds your team lost the previous economy round, you full-bought anyway 34% of the time — well above the 12% rate in your wins. A small leak, but a consistent one.",
+        fix: 'Default to a force-buy read, not a full-buy, the round after any eco loss unless a teammate confirms enemy is also broke.',
+        rounds: 'Costs est. 2–3 rounds per session',
+        visual: { type: 'splitBars', a: { label: 'In your losses', v: 34, flagged: true }, b: { label: 'In your wins', v: 12 } },
+      },
+      {
+        rank: 5, severity: 'medium', impact: 44,
+        label: 'First-death rate', stat: 'First death in 41% of rounds',
+        finding: "You're the first death in 41% of rounds this session — well above the ~25% baseline for your rank. Concentrated in early-round entries taken without info.",
+        fix: 'Default to a slower first 15 seconds when you don\'t have a confirmed read. The entry itself is fine — the timing before it isn\'t.',
+        rounds: 'Costs est. 3–4 rounds per session',
+        visual: { type: 'gauge', value: 41, label: 'First death rate' },
       },
     ],
   },
@@ -60,23 +100,48 @@ const SAMPLE_REPORTS = [
       {
         rank: 1, severity: 'critical', impact: 76,
         label: 'Utility underutilization', stat: '1.1 casts/round on main',
-        finding: "On Omen, you average 1.1 ability casts per round across your last 20 matches — teammates on the same agent in your rank bracket average 2.3. Your smokes land, but you're not using flashes or the TP to create the second angle that converts your entries.",
-        fix: "Force a minimum 2-cast round on your next 5 sessions. Track it. The blind-into-entry sequence is what's missing, not the entry itself.",
-        rounds: 'Costs est. 4–7 rounds per session', mapSlug: null,
+        finding: "On Omen, you average 1.1 ability casts per round — teammates on the same agent in your rank bracket average 2.3. Your smokes land, but you're not using flashes or the TP to create the second angle that converts entries.",
+        fix: "Force a minimum 2-cast round on your next 5 sessions. Track it. The blind-into-entry sequence is what's missing.",
+        rounds: 'Costs est. 4–7 rounds per session',
+        visual: { type: 'gauge', value: 48, label: 'Utility usage vs. rank avg' },
       },
       {
         rank: 2, severity: 'high', impact: 58,
-        label: 'Trade timing', stat: "Traded within 3s only 41% of the time",
-        finding: "When you die first in a round, a teammate converts the trade within 3 seconds only 41% of the time — well below your rank average of ~58%. You're taking duels slightly ahead of your team's positioning, not behind it.",
-        fix: 'Hold your entry by one full rotation cycle when a teammate is more than 2 seconds behind you on comms. The duel is fine — the timing around it isn\'t.',
-        rounds: 'Costs est. 3–5 rounds per session', mapSlug: null,
+        label: 'Trade timing', stat: 'Traded within 3s only 41% of the time',
+        finding: "When you die first in a round, a teammate converts the trade within 3 seconds only 41% of the time — well below your rank average of ~58%. You're taking duels slightly ahead of your team's positioning.",
+        fix: 'Hold your entry by one full rotation cycle when a teammate is more than 2 seconds behind on comms.',
+        rounds: 'Costs est. 3–5 rounds per session',
+        visual: { type: 'splitBars', a: { label: 'You', v: 41, flagged: true }, b: { label: 'Rank average', v: 58 } },
       },
       {
         rank: 3, severity: 'medium', impact: 49,
         label: 'Map-specific breakdown', stat: '38.9% WR on Lotus',
-        finding: 'Lotus: 38.9% (7W–11L) vs your season average of 54.2%. Three-site maps with rotating doors are consistently your worst category — your controller placement assumes static sightlines that Lotus doesn\'t have.',
-        fix: 'On Lotus specifically, delay smoke commits until the door state is confirmed. Same principle, map-specific execution.',
-        rounds: 'Costs est. 2–4 rounds per session', mapSlug: 'lotus',
+        finding: 'Lotus: 38.9% vs your season average of 54.2%. Three-site maps with rotating doors are consistently your worst category — your controller placement assumes static sightlines that Lotus doesn\'t have.',
+        fix: 'On Lotus specifically, delay smoke commits until the door state is confirmed.',
+        rounds: 'Costs est. 2–4 rounds per session',
+        visual: { type: 'mapGrid', maps: [
+          { slug: 'lotus', wr: 39, record: '7W–11L', tier: 'worst' },
+          { slug: 'split', wr: 51, record: '9W–9L', tier: 'mid' },
+          { slug: 'ascent', wr: 68, record: '13W–6L', tier: 'best' },
+        ]},
+      },
+      {
+        rank: 4, severity: 'medium', impact: 45,
+        label: 'Weapon duel breakdown', stat: '38% WR on Operator',
+        finding: "Your Vandal and Phantom duel win rates sit right at your rank baseline. Your Operator win rate is 20 points below that — you're taking Operator picks in duels the gun doesn't favor.",
+        fix: 'Restrict Operator to post-plant holds and confirmed picks only until the duel rate closes the gap.',
+        rounds: 'Costs est. 2–3 rounds per session',
+        visual: { type: 'weaponDuel', weapons: [
+          { slug: 'vandal', wr: 61 }, { slug: 'phantom', wr: 58 }, { slug: 'operator', wr: 38 },
+        ]},
+      },
+      {
+        rank: 5, severity: 'low', impact: 34,
+        label: 'Premade vs. solo split', stat: '46% WR solo vs. 61% in stack',
+        finding: 'Your win rate drops 15 points solo queuing vs. with a premade — a wider gap than typical at your rank, concentrated on info-trade-heavy maps.',
+        fix: 'On solo queue, default to a more self-sufficient agent pool for the first 2 rounds.',
+        rounds: 'Costs est. 2–3 rounds per session',
+        visual: { type: 'splitBars', a: { label: 'Solo queue', v: 46, flagged: true }, b: { label: 'In a premade', v: 61 } },
       },
     ],
   },
@@ -86,39 +151,56 @@ const SAMPLE_REPORTS = [
     rankSlug: 'radiant', rankName: 'Radiant',
     agentSlug: 'jett', region: 'KR', matches: 20,
     stats: [['61.8%', 'Win rate'], ['1.52', 'K/D'], ['189.4', 'ADR'], ['31.6%', 'HS%']],
-    summary: "There's no obvious mechanical or macro leak here — which means the remaining rounds are in the margins. One pattern is costing you close games specifically.",
+    summary: "There's no obvious mechanical or macro leak here — which means the remaining rounds are in the margins. Five small patterns are costing you close games specifically.",
     priorities: [
       {
         rank: 1, severity: 'high', impact: 55,
         label: 'Economy discipline', stat: 'Full-buy into 34% of eco losses',
-        finding: "In rounds your team lost the previous economy round, you full-bought anyway 34% of the time this session — well above the 12% rate in your wins. It's a small leak, but at your rank, small leaks are the only leaks left.",
-        fix: "Default to a force-buy read, not a full-buy, the round after any eco loss unless a teammate confirms enemy is also broke. This is a team-econ discipline fix, not an individual one — flag it to your stack.",
-        rounds: 'Costs est. 2–3 rounds per session', mapSlug: null,
+        finding: "In rounds your team lost the previous economy round, you full-bought anyway 34% of the time — well above the 12% rate in your wins. At your rank, small leaks are the only leaks left.",
+        fix: 'Default to a force-buy read the round after any eco loss unless a teammate confirms enemy is also broke.',
+        rounds: 'Costs est. 2–3 rounds per session',
+        visual: { type: 'splitBars', a: { label: 'In your losses', v: 34, flagged: true }, b: { label: 'In your wins', v: 12 } },
       },
       {
         rank: 2, severity: 'medium', impact: 47,
-        label: 'Premade vs. solo split', stat: '58% WR solo vs. 66% WR in stack',
-        finding: "Your win rate drops 8 points when queuing solo vs. with a premade, concentrated specifically on maps requiring coordinated info trades (Bind, Split). Your individual output doesn't change — the coordination layer does.",
-        fix: 'On solo queue, default to a more self-sufficient agent pool for the first 2 rounds until you have a read on your team\'s comms level.',
-        rounds: 'Costs est. 2–4 rounds per session', mapSlug: 'split',
+        label: 'Coordination-dependent maps', stat: '52% WR on info-trade maps',
+        finding: "Your win rate drops specifically on maps that reward coordinated info trades. Your individual output doesn't change on these maps — the coordination layer does.",
+        fix: 'On solo queue, default to a more self-sufficient read for the first 2 rounds on these three maps specifically.',
+        rounds: 'Costs est. 2–4 rounds per session',
+        visual: { type: 'mapGrid', maps: [
+          { slug: 'bind', wr: 52, record: '11W–10L', tier: 'worst' },
+          { slug: 'split', wr: 58, record: '12W–9L', tier: 'mid' },
+          { slug: 'icebox', wr: 71, record: '15W–6L', tier: 'best' },
+        ]},
       },
       {
         rank: 3, severity: 'medium', impact: 44,
         label: 'First-death rate', stat: 'First death in 29% of rounds',
-        finding: "You're the first death in 29% of rounds this session — not high in absolute terms, but concentrated almost entirely in post-plant scenarios rather than entries, which is a different (and more costly) pattern than it looks like on the surface.",
-        fix: 'Post-plant positioning review: you\'re holding pre-plant angles after the plant instead of rotating to trade-friendly positions. Small habit, disproportionate cost at this rank.',
-        rounds: 'Costs est. 2–3 rounds per session', mapSlug: null,
+        finding: "You're the first death in 29% of rounds — not high in absolute terms, but concentrated almost entirely in post-plant scenarios rather than entries.",
+        fix: 'Post-plant positioning review: you\'re holding pre-plant angles after the plant instead of rotating to trade-friendly positions.',
+        rounds: 'Costs est. 2–3 rounds per session',
+        visual: { type: 'gauge', value: 29, label: 'First death rate' },
+      },
+      {
+        rank: 4, severity: 'low', impact: 38,
+        label: 'Weapon duel breakdown', stat: '82% WR on Vandal close-range',
+        finding: 'Your close-range duel win rate is elite across every weapon except Sheriff, where a small pool of pistol rounds is dragging the average down.',
+        fix: 'Not urgent — small sample size. Worth re-checking after another 20-match block before adjusting anything.',
+        rounds: 'Costs est. 1–2 rounds per session',
+        visual: { type: 'weaponDuel', weapons: [
+          { slug: 'vandal', wr: 82 }, { slug: 'operator', wr: 74 }, { slug: 'sheriff', wr: 44 },
+        ]},
+      },
+      {
+        rank: 5, severity: 'low', impact: 33,
+        label: 'ADR consistency', stat: 'Variance tightens after match 4',
+        finding: 'Your ADR is remarkably consistent across the session, with a slight warm-up dip in your first 3 matches — the only real variance in an otherwise flat, high curve.',
+        fix: 'If queuing early in a session, treat the first 3 matches as a warm-up block, not a ranked-critical block, where possible.',
+        rounds: 'Costs est. 1–2 rounds per session',
+        visual: { type: 'trend', points: [165, 172, 178, 195, 201, 198, 205, 192, 199, 203], flagFrom: null },
       },
     ],
   },
-]
-
-// The 8 deeper-analysis categories going into the next patch (see the
-// project roadmap) — surfaced here as a preview strip so the sample report
-// communicates where the product is headed, not just what's live today.
-const DEPTH_SIGNALS = [
-  'First-death rate', 'Economy discipline', 'Trade timing', 'Weapon duels',
-  'Positional replay', 'Premade split', 'Utility usage', 'Team-play score',
 ]
 
 function VantageLogo({ size = 32 }) {
@@ -295,6 +377,7 @@ export default function Landing() {
       </nav>
 
       <section className={styles.hero}>
+        <ShaderBackground />
         <ParticleField />
         <motion.div className={styles.heroCenter} style={{ y: heroY, opacity: heroOpacity }}>
           <motion.p className={styles.eyebrow}
@@ -354,6 +437,16 @@ export default function Landing() {
         ))}
       </div>
 
+      <section className={styles.comparisonSection}>
+        <FadeUp>
+          <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />What's different</p>
+          <h2 className={styles.sectionHeadline}>Stats tell you<br /><span>what. We tell you why.</span></h2>
+        </FadeUp>
+        <FadeUp delay={0.12}>
+          <ComparisonPanel />
+        </FadeUp>
+      </section>
+
       <section className={styles.howSection} id="how">
         <div className={styles.howInner}>
           <FadeUp>
@@ -393,6 +486,17 @@ export default function Landing() {
             <ProcessFlow />
           </FadeUp>
         </div>
+      </section>
+
+      <section className={styles.feedSection}>
+        <FadeUp>
+          <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Inside a session</p>
+          <h2 className={styles.sectionHeadline}>What gets caught<br /><span>while you're playing.</span></h2>
+          <p className={styles.feedDesc}>A rolling look at the kind of round-level findings VANTAGE flags across a session — this is illustrative, not a live feed of your matches.</p>
+        </FadeUp>
+        <FadeUp delay={0.15}>
+          <DecisionFeed />
+        </FadeUp>
       </section>
 
       <section className={styles.sampleSection} id="sample">
@@ -496,12 +600,7 @@ export default function Landing() {
                         <span className={styles.scStatBadge}>{currentReport.priorities[activePriority].stat}</span>
                       </div>
                       <h3 className={styles.scDetailTitle}>{currentReport.priorities[activePriority].label}</h3>
-                      {currentReport.priorities[activePriority].mapSlug && (
-                        <div className={styles.scMapStrip}>
-                          <img src={mapImagePath(currentReport.priorities[activePriority].mapSlug)} alt={currentReport.priorities[activePriority].mapSlug} />
-                          <span className={styles.scMapLabel}>{currentReport.priorities[activePriority].mapSlug}</span>
-                        </div>
-                      )}
+                      <PriorityVisual visual={currentReport.priorities[activePriority].visual} />
                       <p className={styles.scDetailFinding}>{currentReport.priorities[activePriority].finding}</p>
                       <div className={`${styles.scFix} v-cut-sm`}>
                         <span className={styles.scFixTag}>Fix</span>
@@ -516,15 +615,6 @@ export default function Landing() {
                       </div>
                     </motion.div>
                   </AnimatePresence>
-                </div>
-
-                <div className={styles.scDepthStrip}>
-                  <span className={styles.scDepthLabel}>Coming next patch</span>
-                  <div className={styles.scDepthChips}>
-                    {DEPTH_SIGNALS.map(sig => (
-                      <span key={sig} className={styles.scDepthChip}>{sig}</span>
-                    ))}
-                  </div>
                 </div>
 
                 <div className={styles.scCta}>
@@ -612,7 +702,7 @@ export default function Landing() {
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <SignalConsole />
+          <TacticalMinimap />
         </motion.div>
       </section>
 
@@ -627,7 +717,7 @@ export default function Landing() {
           <a href="/terms">Terms of service</a>
         </nav>
         <div className={styles.footerRight}>
-          <span className={styles.betaBadge}>v2-beta</span>
+          <span className={styles.betaBadge}>v4-beta</span>
           <span className={styles.footerNote}>Not affiliated with Riot Games, Inc.</span>
         </div>
       </footer>

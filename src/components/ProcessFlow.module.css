@@ -1,78 +1,21 @@
-.flow {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0;
-  flex-wrap: wrap;
-}
+.flow { width: 100%; max-width: 900px; margin: 0 auto; }
 
-.phaseWrap { display: flex; align-items: center; }
+.track { width: 100%; height: auto; display: block; }
 
-.phase {
-  width: 200px;
-  padding: 28px 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  text-align: left;
-  position: relative;
-  transition: border-color 0.2s, background 0.2s;
+.labels {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 8px;
 }
-.phase:hover { border-color: var(--border-strong); background: var(--elevated); }
-
-.phaseId {
-  position: absolute; top: 16px; right: 18px;
-  font-family: var(--font-display); font-size: 12px;
-  color: var(--text-tertiary); letter-spacing: 0.05em;
-}
-.phaseIcon { width: 40px; height: 40px; margin-bottom: 18px; }
-.phaseIcon svg { width: 100%; height: 100%; }
-.phaseTitle {
+.labelBlock { text-align: center; padding: 0 12px; }
+.labelTitle {
   font-family: var(--font-display); font-size: 20px; text-transform: uppercase;
-  letter-spacing: 0.02em; margin-bottom: 14px; color: var(--text-primary);
+  letter-spacing: 0.02em; margin-bottom: 12px; color: var(--text-primary);
 }
-.phaseTags { display: flex; flex-direction: column; gap: 6px; }
-.phaseTag {
-  font-family: var(--font-body); font-size: 11px; font-weight: 500;
-  color: var(--text-tertiary); letter-spacing: 0.02em;
-  padding-left: 12px; position: relative;
-}
-.phaseTag::before {
-  content: ''; position: absolute; left: 0; top: 7px;
-  width: 5px; height: 1px; background: var(--accent);
+.labelTags { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.labelTag {
+  font-size: 11px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.02em;
 }
 
-.connector {
-  display: flex; align-items: center; justify-content: center;
-  width: 56px; position: relative; flex-shrink: 0;
-}
-.connectorLine {
-  height: 1px; width: 100%; background: var(--border-strong);
-  transform-origin: left;
-}
-.connectorPulse {
-  position: absolute; left: 0; top: 50%; translate: 0 -50%;
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(255,70,85,0.85);
-  animation: travel 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  opacity: 0;
-}
-
-@keyframes travel {
-  0% { left: 0%; opacity: 0; }
-  8% { opacity: 1; }
-  92% { opacity: 1; }
-  100% { left: 100%; opacity: 0; }
-}
-
-@media (max-width: 900px) {
-  .flow { flex-direction: column; }
-  .phaseWrap { flex-direction: column; width: 100%; }
-  .phase { width: 100%; max-width: 320px; margin: 0 auto; }
-  .connector { width: 1px; height: 32px; }
-  .connectorLine { width: 1px; height: 100%; }
-  .connectorPulse { top: 0; left: 50%; translate: -50% 0; animation: travelV 2.6s cubic-bezier(0.4,0,0.2,1) infinite; }
-  @keyframes travelV {
-    0% { top: 0%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: 100%; opacity: 0; }
-  }
+@media (max-width: 700px) {
+  .labels { grid-template-columns: 1fr; gap: 32px; }
 }

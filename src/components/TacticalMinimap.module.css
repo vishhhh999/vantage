@@ -1,0 +1,44 @@
+.panel {
+  width: 100%; max-width: 440px;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 22px 22px 24px;
+}
+
+.panelHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+.panelLabel { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.panelBadge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); border: 1px solid var(--accent-border); background: var(--accent-dim);
+  padding: 2px 8px;
+}
+
+.mapWrap { position: relative; margin-bottom: 20px; }
+.mapSvg { width: 100%; height: auto; display: block; background: var(--bg); }
+
+.calloutTip {
+  position: absolute; transform: translate(-50%, -130%);
+  background: var(--elevated); border: 1px solid var(--border-strong);
+  padding: 8px 12px; font-size: 11px; color: var(--text-primary);
+  line-height: 1.4; width: 160px; pointer-events: none; z-index: 2;
+}
+.calloutTip[data-tone="flag"] { border-color: var(--accent); }
+.calloutTip[data-tone="info"] { border-color: var(--cyan); }
+
+.insightPanel { border-top: 1px solid var(--border); padding-top: 18px; }
+.insightLabel {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px;
+}
+.insightList { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.insightList li {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.55;
+  padding-left: 14px; position: relative; list-style: none;
+}
+.insightList li::before {
+  content: ''; position: absolute; left: 0; top: 7px;
+  width: 5px; height: 1px; background: var(--accent);
+}
+.insightFootnote { font-size: 11px; color: var(--text-tertiary); line-height: 1.6; font-style: italic; }

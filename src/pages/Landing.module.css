@@ -106,6 +106,18 @@
 }
 .stripLabel { display: block; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; }
 
+/* ─── COMPARISON ─── */
+.comparisonSection { padding: 100px 48px; border-bottom: 1px solid var(--border); text-align: center; }
+.comparisonSection .sectionHeadline { margin-bottom: 48px; }
+
+/* ─── DECISION FEED ─── */
+.feedSection { padding: 100px 48px; border-bottom: 1px solid var(--border); text-align: center; }
+.feedDesc {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.65;
+  max-width: 520px; margin: 20px auto 40px;
+}
+.feedSection > div:last-child { max-width: 640px; margin: 0 auto; }
+
 /* ─── HOW IT WORKS ─── */
 .howSection { padding: 120px 48px; border-bottom: 1px solid var(--border); text-align: center; }
 .howInner { max-width: 1100px; margin: 0 auto; }
@@ -240,26 +252,6 @@
 .scFix p { font-size: 13px; color: var(--text-primary); line-height: 1.65; }
 .scImpact { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--warning); letter-spacing: 0.02em; }
 
-.scMapStrip {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
-  border: 1px solid var(--border); background: var(--bg); padding: 8px 14px 8px 8px; width: fit-content;
-}
-.scMapStrip img { width: 48px; height: 32px; object-fit: cover; }
-.scMapLabel { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
-
-.scDepthStrip {
-  padding: 20px 40px; border-top: 1px solid var(--border); background: var(--bg);
-}
-.scDepthLabel {
-  display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px;
-}
-.scDepthChips { display: flex; flex-wrap: wrap; gap: 8px; }
-.scDepthChip {
-  font-size: 11px; color: var(--text-secondary); letter-spacing: 0.02em;
-  border: 1px solid var(--border); padding: 6px 12px;
-}
-
 .scCta {
   padding: 24px 40px; border-top: 1px solid var(--border);
   background: var(--bg); display: flex; align-items: center; justify-content: space-between;
@@ -339,7 +331,6 @@
   .footer { padding: 20px 24px; flex-direction: column; gap: 14px; }
   .footerLinks { flex-wrap: wrap; justify-content: center; gap: 16px; }
   .reportTabs { flex-wrap: wrap; }
-  .scDepthStrip { padding: 18px 24px; }
 }
 
 .footerRight { display: flex; align-items: center; gap: 10px; }
