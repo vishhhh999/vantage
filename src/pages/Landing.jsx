@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion'
-import TacticalRadar from '../components/TacticalRadar'
+import ProcessFlow from '../components/ProcessFlow'
+import SignalConsole from '../components/SignalConsole'
+import { agentIconPath, mapImagePath, rankBadgePath } from '../lib/assets'
 import styles from './Landing.module.css'
 
 const REGIONS = [
@@ -11,31 +13,112 @@ const REGIONS = [
   { value: 'kr', label: 'KR' },
 ]
 
-const SAMPLE_PRIORITIES = [
+// Three sample profiles so the landing page can show the actual range of
+// what a report looks like at different skill levels, not just one fixed
+// example. No player identity is shown on any of them — rank, agent, and
+// region only, matching what the real product surfaces before sign-in.
+const SAMPLE_REPORTS = [
   {
-    rank: 1, severity: 'critical', impact: 82,
-    label: 'Agent-role mismatch',
-    stat: '45.3% WR on main',
-    finding: 'You\'ve played Raze in 53 of your last 139 matches with a 45.3% winrate. Your Jett winrate is 65.2% over 23 matches — a 20-point gap. You\'re defaulting to the wrong agent every session based on habit, not data.',
-    fix: 'Make Jett your primary. The winrate gap is too large to ignore. Raze is situational — maps with long sightlines where her blast pack creates genuine angles.',
-    rounds: 'Costs est. 4–6 rounds per session'
+    id: 'climber',
+    tabLabel: 'Platinum climber',
+    rankSlug: 'platinum-1', rankName: 'Platinum 1',
+    agentSlug: 'raze', region: 'AP', matches: 20,
+    stats: [['48.9%', 'Win rate'], ['1.18', 'K/D'], ['158.6', 'ADR'], ['17.3%', 'HS%']],
+    summary: "Your ceiling is clearly Immortal — the data proves it. Your floor is what's keeping you in Platinum. Three patterns are responsible for the gap. Fix these in order.",
+    priorities: [
+      {
+        rank: 1, severity: 'critical', impact: 82,
+        label: 'Agent-role mismatch', stat: '45.3% WR on main',
+        finding: "You've played Raze in 53 of your last 139 matches with a 45.3% winrate. Your Jett winrate is 65.2% over 23 matches — a 20-point gap. You're defaulting to the wrong agent every session based on habit, not data.",
+        fix: 'Make Jett your primary. The winrate gap is too large to ignore. Raze is situational — maps with long sightlines where her blast pack creates genuine angles.',
+        rounds: 'Costs est. 4–6 rounds per session', mapSlug: null,
+      },
+      {
+        rank: 2, severity: 'high', impact: 61,
+        label: 'Map-specific breakdown', stat: '31.6% WR on Corrode',
+        finding: "Corrode: 31.6% (6W–12L). Bind: 42.9% (9W–12L). Haven: 75% (15W–5L). Your read on 3-site maps is strong. Your rotation logic breaks on maps with tight corridors — you're playing the same tempo regardless of map geometry.",
+        fix: "On Corrode and Bind, slow your default tempo by one beat. These maps punish commitment — read before pushing, don't push to read.",
+        rounds: 'Costs est. 3–5 rounds per session', mapSlug: 'corrode',
+      },
+      {
+        rank: 3, severity: 'high', impact: 74,
+        label: 'Session degradation', stat: 'K/D drops 0.4 after match 6',
+        finding: 'You played 10 matches on March 11. Your DDΔ that day was nearly neutral despite 5 wins. Your best single match was 2.1 K/D. Your worst was 0.5 K/D. Same player, same week. Your floor is costing you more than your ceiling gains.',
+        fix: "Hard cap: 5 matches per session. If you go 2 consecutive losses with negative DDΔ — stop. The data shows you don't recover within the same session.",
+        rounds: 'Costs est. 5–8 rounds per session', mapSlug: null,
+      },
+    ],
   },
   {
-    rank: 2, severity: 'high', impact: 61,
-    label: 'Map-specific breakdown',
-    stat: '31.6% WR on Corrode',
-    finding: 'Corrode: 31.6% (6W–12L). Bind: 42.9% (9W–12L). Haven: 75% (15W–5L). Your read on 3-site maps is strong. Your rotation logic breaks on maps with tight corridors — you\'re playing the same tempo regardless of map geometry.',
-    fix: 'On Corrode and Bind, slow your default tempo by one beat. These maps punish commitment — read before pushing, don\'t push to read.',
-    rounds: 'Costs est. 3–5 rounds per session'
+    id: 'grinder',
+    tabLabel: 'Immortal grinder',
+    rankSlug: 'immortal-2', rankName: 'Immortal 2',
+    agentSlug: 'omen', region: 'NA', matches: 20,
+    stats: [['54.2%', 'Win rate'], ['1.34', 'K/D'], ['171.9', 'ADR'], ['24.1%', 'HS%']],
+    summary: "Your mechanics are Radiant-adjacent. Your utility usage is not. You're winning duels and still losing rounds — the gap isn't aim, it's timing.",
+    priorities: [
+      {
+        rank: 1, severity: 'critical', impact: 76,
+        label: 'Utility underutilization', stat: '1.1 casts/round on main',
+        finding: "On Omen, you average 1.1 ability casts per round across your last 20 matches — teammates on the same agent in your rank bracket average 2.3. Your smokes land, but you're not using flashes or the TP to create the second angle that converts your entries.",
+        fix: "Force a minimum 2-cast round on your next 5 sessions. Track it. The blind-into-entry sequence is what's missing, not the entry itself.",
+        rounds: 'Costs est. 4–7 rounds per session', mapSlug: null,
+      },
+      {
+        rank: 2, severity: 'high', impact: 58,
+        label: 'Trade timing', stat: "Traded within 3s only 41% of the time",
+        finding: "When you die first in a round, a teammate converts the trade within 3 seconds only 41% of the time — well below your rank average of ~58%. You're taking duels slightly ahead of your team's positioning, not behind it.",
+        fix: 'Hold your entry by one full rotation cycle when a teammate is more than 2 seconds behind you on comms. The duel is fine — the timing around it isn\'t.',
+        rounds: 'Costs est. 3–5 rounds per session', mapSlug: null,
+      },
+      {
+        rank: 3, severity: 'medium', impact: 49,
+        label: 'Map-specific breakdown', stat: '38.9% WR on Lotus',
+        finding: 'Lotus: 38.9% (7W–11L) vs your season average of 54.2%. Three-site maps with rotating doors are consistently your worst category — your controller placement assumes static sightlines that Lotus doesn\'t have.',
+        fix: 'On Lotus specifically, delay smoke commits until the door state is confirmed. Same principle, map-specific execution.',
+        rounds: 'Costs est. 2–4 rounds per session', mapSlug: 'lotus',
+      },
+    ],
   },
   {
-    rank: 3, severity: 'high', impact: 74,
-    label: 'Session degradation',
-    stat: 'K/D drops 0.4 after match 6',
-    finding: 'You played 10 matches on March 11. Your DDΔ that day was nearly neutral despite 5 wins. Your best single match was 2.1 K/D. Your worst was 0.5 K/D. Same player, same week. Your floor is costing you more than your ceiling gains.',
-    fix: 'Hard cap: 5 matches per session. If you go 2 consecutive losses with negative DDΔ — stop. The data shows you don\'t recover within the same session.',
-    rounds: 'Costs est. 5–8 rounds per session'
-  }
+    id: 'peak',
+    tabLabel: 'Radiant peak',
+    rankSlug: 'radiant', rankName: 'Radiant',
+    agentSlug: 'jett', region: 'KR', matches: 20,
+    stats: [['61.8%', 'Win rate'], ['1.52', 'K/D'], ['189.4', 'ADR'], ['31.6%', 'HS%']],
+    summary: "There's no obvious mechanical or macro leak here — which means the remaining rounds are in the margins. One pattern is costing you close games specifically.",
+    priorities: [
+      {
+        rank: 1, severity: 'high', impact: 55,
+        label: 'Economy discipline', stat: 'Full-buy into 34% of eco losses',
+        finding: "In rounds your team lost the previous economy round, you full-bought anyway 34% of the time this session — well above the 12% rate in your wins. It's a small leak, but at your rank, small leaks are the only leaks left.",
+        fix: "Default to a force-buy read, not a full-buy, the round after any eco loss unless a teammate confirms enemy is also broke. This is a team-econ discipline fix, not an individual one — flag it to your stack.",
+        rounds: 'Costs est. 2–3 rounds per session', mapSlug: null,
+      },
+      {
+        rank: 2, severity: 'medium', impact: 47,
+        label: 'Premade vs. solo split', stat: '58% WR solo vs. 66% WR in stack',
+        finding: "Your win rate drops 8 points when queuing solo vs. with a premade, concentrated specifically on maps requiring coordinated info trades (Bind, Split). Your individual output doesn't change — the coordination layer does.",
+        fix: 'On solo queue, default to a more self-sufficient agent pool for the first 2 rounds until you have a read on your team\'s comms level.',
+        rounds: 'Costs est. 2–4 rounds per session', mapSlug: 'split',
+      },
+      {
+        rank: 3, severity: 'medium', impact: 44,
+        label: 'First-death rate', stat: 'First death in 29% of rounds',
+        finding: "You're the first death in 29% of rounds this session — not high in absolute terms, but concentrated almost entirely in post-plant scenarios rather than entries, which is a different (and more costly) pattern than it looks like on the surface.",
+        fix: 'Post-plant positioning review: you\'re holding pre-plant angles after the plant instead of rotating to trade-friendly positions. Small habit, disproportionate cost at this rank.',
+        rounds: 'Costs est. 2–3 rounds per session', mapSlug: null,
+      },
+    ],
+  },
+]
+
+// The 8 deeper-analysis categories going into the next patch (see the
+// project roadmap) — surfaced here as a preview strip so the sample report
+// communicates where the product is headed, not just what's live today.
+const DEPTH_SIGNALS = [
+  'First-death rate', 'Economy discipline', 'Trade timing', 'Weapon duels',
+  'Positional replay', 'Premade split', 'Utility usage', 'Team-play score',
 ]
 
 function VantageLogo({ size = 32 }) {
@@ -162,7 +245,14 @@ export default function Landing() {
   const [riotId, setRiotId] = useState('')
   const [region, setRegion] = useState('ap')
   const [error, setError] = useState('')
+  const [activeReport, setActiveReport] = useState(0)
   const [activePriority, setActivePriority] = useState(0)
+  const currentReport = SAMPLE_REPORTS[activeReport]
+
+  function selectReport(i) {
+    setActiveReport(i)
+    setActivePriority(0)
+  }
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [contactSent, setContactSent] = useState(false)
   const navigate = useNavigate()
@@ -199,6 +289,7 @@ export default function Landing() {
         <div className={styles.navLinks}>
           <a href="#how">How it works</a>
           <a href="#sample">Sample report</a>
+          <a href="/process">Process</a>
         </div>
         <a href="/login" className={styles.navLogin}>Sign in</a>
       </nav>
@@ -210,7 +301,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}>
             <span className={styles.eyebrowDot} />
-            AI coaching for Valorant
+            Round-level decision analysis
           </motion.p>
           <motion.h1 className={styles.headline}
             initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }}
@@ -299,25 +390,7 @@ export default function Landing() {
           </div>
 
           <FadeUp delay={0.1}>
-            <div className={styles.pipeline}>
-              {['Riot ID', 'Match API', 'Scoring', 'AI Coach', 'Report'].map((label, i, arr) => (
-                <div key={label} className={styles.pipeStep}>
-                  <div className={styles.pipeNode}><span>{label}</span></div>
-                  {i < arr.length - 1 && (
-                    <div className={styles.pipeConnector}>
-                      <motion.div className={styles.pipeFlow}
-                        initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }}
-                        transition={{ duration: 0.4, delay: i * 0.1 }}
-                        viewport={{ once: true }} />
-                      <span className={styles.pipePulse} style={{ animationDelay: `${i * 0.35}s` }} />
-                      <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
-                        <path d="M0 0l6 4-6 4z" fill="#3E4753"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            <ProcessFlow />
           </FadeUp>
         </div>
       </section>
@@ -325,106 +398,141 @@ export default function Landing() {
       <section className={styles.sampleSection} id="sample">
         <div className={styles.sampleInner}>
           <FadeUp>
-            <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Sample report</p>
+            <p className={styles.sectionEyebrow}><span className={styles.eyebrowDot} />Sample reports</p>
             <h2 className={styles.sectionHeadline}>Not stats.<br /><span>Decisions.</span></h2>
-            <p className={styles.sampleDesc}>Every other tool shows you what happened. VANTAGE tells you why you lost the round — and what to change. This is a real analysis. Yours will look exactly like this.</p>
+            <p className={styles.sampleDesc}>Every other tool shows you what happened. VANTAGE tells you why you lost the round — and what to change. Three sample profiles below show the range, from climbing out of mid ranks to closing margins at the top.</p>
+          </FadeUp>
+
+          <FadeUp delay={0.1}>
+            <div className={styles.reportTabs}>
+              {SAMPLE_REPORTS.map((r, i) => (
+                <button key={r.id} className={styles.reportTab} data-active={activeReport === i} onClick={() => selectReport(i)}>
+                  {r.tabLabel}
+                </button>
+              ))}
+            </div>
           </FadeUp>
 
           <FadeUp delay={0.15}>
-            <div className={`${styles.sampleCard} v-cut-lg`}>
-              <div className={styles.scHeader}>
-                <div className={styles.scLeft}>
-                  <VantageLogo size={16} />
-                  <div>
-                    <p className={styles.scName}>john pork<span>#hax</span></p>
-                    <p className={styles.scMeta}>Platinum 1 · 20 matches · AP</p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentReport.id}
+                className={`${styles.sampleCard} v-cut-lg`}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className={styles.scHeader}>
+                  <div className={styles.scLeft}>
+                    <img className={styles.scRankBadge} src={rankBadgePath(currentReport.rankName)} alt={currentReport.rankName} />
+                    <div className={styles.scAgentPortrait}>
+                      <img src={agentIconPath(currentReport.agentSlug)} alt={currentReport.agentSlug} />
+                    </div>
+                    <div>
+                      <p className={styles.scRankName}>{currentReport.rankName}</p>
+                      <p className={styles.scMeta}>{currentReport.matches} matches · {currentReport.region}</p>
+                    </div>
+                  </div>
+                  <div className={styles.scStats}>
+                    {currentReport.stats.map(([v, l]) => (
+                      <div key={l} className={styles.scStat}>
+                        <span className={styles.scStatNum}>{v}</span>
+                        <span className={styles.scStatLabel}>{l}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className={styles.scStats}>
-                  {[['48.9%','Win rate'],['1.18','K/D'],['158.6','ADR'],['17.3%','HS%']].map(([v,l]) => (
-                    <div key={l} className={styles.scStat}>
-                      <span className={styles.scStatNum}>{v}</span>
-                      <span className={styles.scStatLabel}>{l}</span>
-                    </div>
-                  ))}
+
+                <div className={styles.scSummary}>
+                  <span className={styles.scSummaryTag}>Coach</span>
+                  <p>{currentReport.summary}</p>
                 </div>
-              </div>
 
-              <div className={styles.scSummary}>
-                <span className={styles.scSummaryTag}>Coach</span>
-                <p>Your ceiling is clearly Immortal — the data proves it. Your floor is what's keeping you in Platinum. Three patterns are responsible for the gap. Fix these in order.</p>
-              </div>
+                <div className={styles.scImpactChart}>
+                  <span className={styles.scImpactChartLabel}>Impact by priority</span>
+                  <div className={styles.scImpactBars}>
+                    {currentReport.priorities.map((p, i) => (
+                      <button key={p.rank} className={styles.scImpactBarRow} onClick={() => setActivePriority(i)} data-active={activePriority === i}>
+                        <span className={styles.scImpactBarLabel}>P{p.rank}</span>
+                        <div className={styles.scImpactBarTrack}>
+                          <motion.div
+                            className={styles.scImpactBarFill}
+                            data-severity={p.severity}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${p.impact}%` }}
+                            transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                          />
+                        </div>
+                        <span className={styles.scImpactBarNum}>{p.impact}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <div className={styles.scImpactChart}>
-                <span className={styles.scImpactChartLabel}>Impact by priority</span>
-                <div className={styles.scImpactBars}>
-                  {SAMPLE_PRIORITIES.map((p, i) => (
-                    <button key={p.rank} className={styles.scImpactBarRow} onClick={() => setActivePriority(i)} data-active={activePriority === i}>
-                      <span className={styles.scImpactBarLabel}>P{p.rank}</span>
-                      <div className={styles.scImpactBarTrack}>
-                        <motion.div
-                          className={styles.scImpactBarFill}
-                          data-severity={p.severity}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${p.impact}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.7, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
-                        />
+                <div className={styles.scBody}>
+                  <div className={styles.scTabs}>
+                    {currentReport.priorities.map((p, i) => (
+                      <button key={p.rank} className={`${styles.scTab} v-cut-sm`}
+                        data-active={activePriority === i}
+                        data-severity={p.severity}
+                        onClick={() => setActivePriority(i)}>
+                        <span className={styles.scTabDot} data-severity={p.severity} />
+                        <span className={styles.scTabNum}>0{p.rank}</span>
+                        <span className={styles.scTabLabel}>{p.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div key={activePriority} className={styles.scDetail}
+                      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
+                      <div className={styles.scDetailTop}>
+                        <span className={styles.scPriorityLabel} data-severity={currentReport.priorities[activePriority].severity}>
+                          <span className={styles.scPriorityDot} />
+                          Priority {currentReport.priorities[activePriority].rank}
+                        </span>
+                        <span className={styles.scStatBadge}>{currentReport.priorities[activePriority].stat}</span>
                       </div>
-                      <span className={styles.scImpactBarNum}>{p.impact}</span>
-                    </button>
-                  ))}
+                      <h3 className={styles.scDetailTitle}>{currentReport.priorities[activePriority].label}</h3>
+                      {currentReport.priorities[activePriority].mapSlug && (
+                        <div className={styles.scMapStrip}>
+                          <img src={mapImagePath(currentReport.priorities[activePriority].mapSlug)} alt={currentReport.priorities[activePriority].mapSlug} />
+                          <span className={styles.scMapLabel}>{currentReport.priorities[activePriority].mapSlug}</span>
+                        </div>
+                      )}
+                      <p className={styles.scDetailFinding}>{currentReport.priorities[activePriority].finding}</p>
+                      <div className={`${styles.scFix} v-cut-sm`}>
+                        <span className={styles.scFixTag}>Fix</span>
+                        <p>{currentReport.priorities[activePriority].fix}</p>
+                      </div>
+                      <div className={styles.scImpact}>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <circle cx="6" cy="6" r="5" stroke="#F5A623" strokeWidth="1"/>
+                          <path d="M6 3.5v3M6 8v.5" stroke="#F5A623" strokeWidth="1.2" strokeLinecap="round"/>
+                        </svg>
+                        {currentReport.priorities[activePriority].rounds}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
-              </div>
 
-              <div className={styles.scBody}>
-                <div className={styles.scTabs}>
-                  {SAMPLE_PRIORITIES.map((p, i) => (
-                    <button key={p.rank} className={`${styles.scTab} v-cut-sm`}
-                      data-active={activePriority === i}
-                      data-severity={p.severity}
-                      onClick={() => setActivePriority(i)}>
-                      <span className={styles.scTabDot} data-severity={p.severity} />
-                      <span className={styles.scTabNum}>0{p.rank}</span>
-                      <span className={styles.scTabLabel}>{p.label}</span>
-                    </button>
-                  ))}
+                <div className={styles.scDepthStrip}>
+                  <span className={styles.scDepthLabel}>Coming next patch</span>
+                  <div className={styles.scDepthChips}>
+                    {DEPTH_SIGNALS.map(sig => (
+                      <span key={sig} className={styles.scDepthChip}>{sig}</span>
+                    ))}
+                  </div>
                 </div>
 
-                <AnimatePresence mode="wait">
-                  <motion.div key={activePriority} className={styles.scDetail}
-                    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -6 }}
-                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}>
-                    <div className={styles.scDetailTop}>
-                      <span className={styles.scPriorityLabel} data-severity={SAMPLE_PRIORITIES[activePriority].severity}>
-                        <span className={styles.scPriorityDot} />
-                        Priority {SAMPLE_PRIORITIES[activePriority].rank}
-                      </span>
-                      <span className={styles.scStatBadge}>{SAMPLE_PRIORITIES[activePriority].stat}</span>
-                    </div>
-                    <h3 className={styles.scDetailTitle}>{SAMPLE_PRIORITIES[activePriority].label}</h3>
-                    <p className={styles.scDetailFinding}>{SAMPLE_PRIORITIES[activePriority].finding}</p>
-                    <div className={`${styles.scFix} v-cut-sm`}>
-                      <span className={styles.scFixTag}>Fix</span>
-                      <p>{SAMPLE_PRIORITIES[activePriority].fix}</p>
-                    </div>
-                    <div className={styles.scImpact}>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <circle cx="6" cy="6" r="5" stroke="#F5A623" strokeWidth="1"/>
-                        <path d="M6 3.5v3M6 8v.5" stroke="#F5A623" strokeWidth="1.2" strokeLinecap="round"/>
-                      </svg>
-                      {SAMPLE_PRIORITIES[activePriority].rounds}
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              <div className={styles.scCta}>
-                <p>This is real analysis. See it on your own matches.</p>
-                <button className={`${styles.scCtaBtn} v-cut-sm`} onClick={handleAnalyze}>Sign in to analyze</button>
-              </div>
-            </div>
+                <div className={styles.scCta}>
+                  <p>This is sample analysis. Login to get your own analysis done.</p>
+                  <button className={`${styles.scCtaBtn} v-cut-sm`} onClick={handleAnalyze}>Sign in to analyze</button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </FadeUp>
         </div>
       </section>
@@ -504,7 +612,7 @@ export default function Landing() {
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <TacticalRadar size={340} dense />
+          <SignalConsole />
         </motion.div>
       </section>
 
@@ -513,6 +621,11 @@ export default function Landing() {
           <VantageLogo size={16} />
           <span className={styles.wordmark}>VANTAGE</span>
         </div>
+        <nav className={styles.footerLinks}>
+          <a href="/process">Process</a>
+          <a href="/privacy">Privacy policy</a>
+          <a href="/terms">Terms of service</a>
+        </nav>
         <div className={styles.footerRight}>
           <span className={styles.betaBadge}>v2-beta</span>
           <span className={styles.footerNote}>Not affiliated with Riot Games, Inc.</span>

@@ -1,9 +1,17 @@
+import { supabase } from './supabase'
+
 export async function generateCoachingReport(overview, priorities, riotId) {
   const prompt = buildPrompt(overview, priorities, riotId)
 
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('You need to be signed in to generate a report.')
+
   const res = await fetch('/api/anthropic', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
