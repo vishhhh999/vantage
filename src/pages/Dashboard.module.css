@@ -26,7 +26,12 @@
 }
 .linkCardHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
 .linkTitle { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
-.linkSubtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 32px; }
+.linkSubtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
+.optInDisclaimer {
+  font-size: 12px; color: var(--text-tertiary); line-height: 1.6;
+  padding: 12px 14px; border: 1px solid var(--border); background: var(--bg);
+  margin-bottom: 24px;
+}
 .linkForm { display: flex; flex-direction: column; gap: 14px; }
 .linkFields { display: flex; gap: 8px; }
 .linkInput {

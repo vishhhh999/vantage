@@ -1,3 +1,5 @@
+import { supabase } from './supabase'
+
 const CLIENT_ID = import.meta.env.VITE_RIOT_CLIENT_ID
 const REDIRECT_URI = import.meta.env.VITE_RIOT_REDIRECT_URI
 
@@ -17,7 +19,7 @@ export function buildRiotAuthorizeUrl(state) {
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
-    scope: 'openid',
+    scope: 'openid offline_access',
     state,
   })
   return `https://auth.riotgames.com/authorize?${params.toString()}`
@@ -27,9 +29,15 @@ export function buildRiotAuthorizeUrl(state) {
 // verified puuid / Riot ID / region. The actual token exchange (which
 // needs the client secret) happens server-side in /api/riot-token.
 export async function exchangeRiotCode(code) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('You need to be signed in before linking your Riot account.')
+
   const res = await fetch('/api/riot-token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
     body: JSON.stringify({ code }),
   })
   const data = await res.json()

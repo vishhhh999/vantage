@@ -259,6 +259,11 @@ export default function Dashboard() {
             Sign in with Riot to verify it's really you. VANTAGE will auto-refresh your coaching report each time you sign in.
           </p>
 
+          <p className={styles.optInDisclaimer}>
+            Signing in links your Riot account and shares your match data with VANTAGE so we can generate your
+            coaching reports. Your data is never shown to other players — it's visible only to you.
+          </p>
+
           {rsoConfigured ? (
             <button className={`${styles.linkSubmitBtn} v-cut-sm`} onClick={handleRiotSignIn}>
               Sign in with Riot Games

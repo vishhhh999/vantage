@@ -3,6 +3,8 @@
 // Valorant shard/region — all server-side, since this is the only place
 // the client_secret is allowed to exist.
 
+import { createClient } from '@supabase/supabase-js'
+
 const TOKEN_URL = 'https://auth.riotgames.com/token'
 const REGION_ROUTING = {
   na1: 'na', la1: 'na', la2: 'na', br1: 'na', oc1: 'na',
@@ -14,12 +16,25 @@ const ALLOWED_ORIGIN = process.env.NODE_ENV === 'production'
   ? 'https://vantage-ochre-alpha.vercel.app'
   : '*'
 
+async function getVerifiedUserId(req) {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) return null
+  const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error || !data?.user) return null
+  return data.user.id
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN)
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const userId = await getVerifiedUserId(req)
+  if (!userId) return res.status(401).json({ error: 'Sign in required' })
 
   const { code } = req.body || {}
   if (!code) return res.status(400).json({ error: 'Missing authorization code' })
@@ -53,7 +68,26 @@ export default async function handler(req, res) {
     if (!tokenRes.ok) {
       return res.status(tokenRes.status).json({ error: tokenData.error_description || 'Token exchange failed', detail: tokenData })
     }
-    const { access_token } = tokenData
+    const { access_token, refresh_token } = tokenData
+
+    // Persist the refresh token so future analyses don't require the
+    // player to click through Riot's login page every session. This uses
+    // the service role key — the only client in this codebase that does —
+    // specifically because riot_tokens has no RLS policies at all and is
+    // unreachable any other way. Non-fatal if it fails: the player just
+    // falls back to re-authenticating next time.
+    if (refresh_token && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+        await admin.from('riot_tokens').upsert({
+          user_id: userId,
+          refresh_token,
+          updated_at: new Date().toISOString(),
+        })
+      } catch {
+        // Non-fatal — see comment above.
+      }
+    }
 
     // 2. Resolve who logged in.
     const meRes = await fetch('https://americas.api.riotgames.com/riot/account/v1/accounts/me', {

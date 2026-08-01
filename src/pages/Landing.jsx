@@ -416,7 +416,7 @@ export default function Landing() {
               </svg>
             </button>
             {error && <p className={styles.inputError}>{error}</p>}
-            <p className={styles.inputNote}>Free · Sign in with Riot required · No installs</p>
+            <p className={styles.inputNote}>Free · Sign in with Riot required · Your data is never shown to other players</p>
           </motion.form>
         </motion.div>
       </section>
